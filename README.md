@@ -256,15 +256,6 @@ pytest tests/
 
 For more troubleshooting guidance, see [docs/troubleshooting.md](docs/troubleshooting.md).
 
-## Contributing
-
-This is a structured project managed with TaskMaster AI. Contributions should follow the task-based workflow:
-
-1. Check `.taskmaster/tasks/` for available tasks
-2. Implement following the task acceptance criteria
-3. Update task status and add implementation notes
-4. Submit pull request referencing the task ID
-
 ## License
 
 License information will be added here.
