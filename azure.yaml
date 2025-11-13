@@ -1,0 +1,124 @@
+# Azure Developer CLI (azd) Configuration
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+# Project metadata
+name: teams-ai-agent
+metadata:
+  template: teams-ai-agent@0.0.1-alpha
+
+# Service definitions
+services:
+  api:
+    # Project path for the Python FastAPI application
+    project: ./src
+
+    # Container Apps hosting configuration
+    language: python
+    host: containerapp
+
+    # Container image configuration
+    docker:
+      path: ./src/Dockerfile
+      context: ./src
+
+    # Environment variables for the container
+    # These will be populated from infrastructure outputs
+    env:
+      # Azure OpenAI Configuration
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT}
+      AZURE_OPENAI_DEPLOYMENT_NAME: ${AZURE_OPENAI_DEPLOYMENT_NAME}
+      AZURE_OPENAI_API_VERSION: "2024-02-15-preview"
+
+      # Bot Service Configuration
+      BOT_ID: ${BOT_ID}
+      BOT_PASSWORD: ${BOT_PASSWORD}
+      BOT_TENANT_ID: ${BOT_TENANT_ID}
+
+      # Azure Resources
+      KEY_VAULT_NAME: ${KEY_VAULT_NAME}
+      APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
+
+      # Application Configuration
+      PYTHON_ENV: "production"
+      LOG_LEVEL: "INFO"
+
+# Deployment workflow hooks
+hooks:
+  # Pre-package hook: Validate configuration before packaging
+  prepackage:
+    posix:
+      shell: sh
+      run: |
+        echo "Validating configuration before packaging..."
+        if [ -f "./scripts/validate-config.sh" ]; then
+          ./scripts/validate-config.sh
+        else
+          echo "Validation script not found, skipping..."
+        fi
+        echo "Pre-package validation complete"
+    windows:
+      shell: pwsh
+      run: |
+        Write-Host "Validating configuration before packaging..."
+        if (Test-Path "./scripts/validate-config.ps1") {
+          ./scripts/validate-config.ps1
+        } else {
+          Write-Host "Validation script not found, skipping..."
+        }
+        Write-Host "Pre-package validation complete"
+
+  # Post-provision hook: Register bot and configure Azure resources
+  postprovision:
+    posix:
+      shell: sh
+      run: |
+        echo "Running post-provision configuration..."
+        if [ -f "./scripts/setup-bot.sh" ]; then
+          ./scripts/setup-bot.sh
+        else
+          echo "Bot setup script not found, skipping..."
+          echo "WARNING: Bot registration must be completed manually"
+        fi
+        echo "Post-provision configuration complete"
+    windows:
+      shell: pwsh
+      run: |
+        Write-Host "Running post-provision configuration..."
+        if (Test-Path "./scripts/setup-bot.ps1") {
+          ./scripts/setup-bot.ps1
+        } else {
+          Write-Host "Bot setup script not found, skipping..."
+          Write-Host "WARNING: Bot registration must be completed manually"
+        }
+        Write-Host "Post-provision configuration complete"
+
+  # Post-deploy hook: Generate Teams app manifest
+  postdeploy:
+    posix:
+      shell: sh
+      run: |
+        echo "Generating Teams app manifest..."
+        if [ -f "./scripts/generate-teams-manifest.sh" ]; then
+          ./scripts/generate-teams-manifest.sh
+        else
+          echo "Manifest generation script not found, skipping..."
+          echo "WARNING: Teams manifest must be generated manually"
+        fi
+        echo "Deployment complete!"
+        echo "Next steps:"
+        echo "1. Upload the Teams app manifest to Teams Admin Center"
+        echo "2. Test the bot in Microsoft Teams"
+    windows:
+      shell: pwsh
+      run: |
+        Write-Host "Generating Teams app manifest..."
+        if (Test-Path "./scripts/generate-teams-manifest.ps1") {
+          ./scripts/generate-teams-manifest.ps1
+        } else {
+          Write-Host "Manifest generation script not found, skipping..."
+          Write-Host "WARNING: Teams manifest must be generated manually"
+        }
+        Write-Host "Deployment complete!"
+        Write-Host "Next steps:"
+        Write-Host "1. Upload the Teams app manifest to Teams Admin Center"
+        Write-Host "2. Test the bot in Microsoft Teams"

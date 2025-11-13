@@ -48,3 +48,8 @@ ENV/
 
 # Azure
 .azure/
+
+# Azure Developer CLI - Environment specific files
+# Keep .azure directory structure but exclude secrets
+.azure/*/config.json
+.azure/*/.env

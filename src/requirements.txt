@@ -1,0 +1,14 @@
+# Python Dependencies for Azure AI Agent Framework
+# This file will be populated in Phase 2: Agent Implementation
+
+# Core dependencies (to be added in Task 2.x):
+# fastapi>=0.104.0
+# uvicorn[standard]>=0.24.0
+# azure-identity>=1.15.0
+# azure-keyvault-secrets>=4.7.0
+# openai>=1.0.0
+# botbuilder-core>=4.15.0
+# botbuilder-schema>=4.15.0
+# applicationinsights>=0.11.10
+
+# TODO: Add complete dependencies in Phase 2

@@ -1,0 +1,41 @@
+{
+  "description": "Resource type abbreviations for Azure naming conventions",
+  "version": "1.0.0",
+  "abbreviations": {
+    "resourceGroup": "rg",
+    "containerAppsEnvironment": "cae",
+    "containerApps": "ca",
+    "containerRegistry": "cr",
+    "openAiAccount": "oai",
+    "botService": "bot",
+    "keyVault": "kv",
+    "logAnalytics": "log",
+    "appInsights": "appi",
+    "managedIdentity": "id",
+    "storageAccount": "st",
+    "virtualNetwork": "vnet",
+    "subnet": "snet",
+    "networkSecurityGroup": "nsg",
+    "publicIpAddress": "pip",
+    "loadBalancer": "lb",
+    "applicationGateway": "agw"
+  },
+  "namingConvention": "{abbr}-{projectName}-{environment}-{resourceToken}",
+  "examples": {
+    "resourceGroup": "rg-dev-abc123xyz",
+    "containerAppsEnvironment": "cae-dev-abc123xyz",
+    "containerApp": "ca-dev-abc123xyz",
+    "containerRegistry": "crdevabc123xyz",
+    "openAiAccount": "oai-dev-abc123xyz",
+    "botService": "bot-dev-abc123xyz",
+    "keyVault": "kv-dev-abc123xyz",
+    "logAnalytics": "log-dev-abc123xyz",
+    "appInsights": "appi-dev-abc123xyz"
+  },
+  "notes": [
+    "Resource tokens are generated using uniqueString(subscription().id, environmentName, location)",
+    "Container Registry names cannot contain hyphens, so use concatenation without separators",
+    "Key Vault names must be 3-24 characters and globally unique",
+    "Some services like Bot Service have 'global' location requirements"
+  ]
+}

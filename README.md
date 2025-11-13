@@ -1,15 +1,261 @@
-# MS Teams AI Agent
+# Azure AI Agent Framework for Microsoft Teams
 
-A Microsoft Teams AI agent application.
+A production-ready AI agent framework for Microsoft Teams, built with Azure Container Apps, Azure OpenAI, and the Microsoft Agent Framework. Deploy to Azure with a single command using Azure Developer CLI.
 
-## Getting Started
+## Features
 
-Instructions for setting up and running the project will be added here.
+- One-command deployment with `azd up` (target: <15 minutes)
+- Azure OpenAI integration with GPT-4
+- Microsoft Teams bot integration
+- Model Context Protocol (MCP) server support
+- Application Insights monitoring
+- Secure secret management with Azure Key Vault
+- Container-based deployment on Azure Container Apps
 
-## Development
+## Prerequisites
 
-Development instructions will be added here.
+- **Azure Subscription** with access to:
+  - Azure OpenAI Service
+  - Azure Container Apps
+  - Azure Bot Service
+- **Azure CLI** (`az`) - [Install](https://docs.microsoft.com/cli/azure/install-azure-cli)
+- **Azure Developer CLI** (`azd`) - [Install](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
+- **Python 3.11+** - [Install](https://www.python.org/downloads/)
+- **Docker** - [Install](https://docs.docker.com/get-docker/)
+
+## Quick Start
+
+### 1. Local Development Setup
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd ms-teams-ai-agent
+
+# Set up local development environment
+./scripts/setup-local.sh
+
+# Activate Python virtual environment
+source venv/bin/activate  # On Windows: venv\Scripts\Activate.ps1
+
+# Edit .env with your Azure resource values
+nano .env
+```
+
+### 2. Deploy to Azure
+
+```bash
+# Login to Azure
+azd auth login
+
+# Provision infrastructure and deploy application
+azd up
+```
+
+This single command will:
+1. Validate configuration (prepackage hook)
+2. Provision Azure infrastructure (Bicep templates)
+3. Register Azure Bot Service (postprovision hook)
+4. Build and deploy container image
+5. Generate Teams app manifest (postdeploy hook)
+
+### 3. Configure Microsoft Teams
+
+After deployment completes:
+1. Navigate to the output directory for the Teams app package
+2. Upload the generated `.zip` file to Teams Admin Center
+3. Install the app in your Teams organization
+
+## Project Structure
+
+```
+/
+├── azure.yaml              # Azure Developer CLI configuration
+├── infra/                  # Bicep infrastructure templates
+│   ├── main.bicep         # Main orchestration template
+│   └── modules/           # Modular Bicep components
+├── src/                    # Python application source
+│   ├── requirements.txt   # Python dependencies
+│   ├── Dockerfile         # Container image definition
+│   └── app/               # Application code
+├── scripts/                # Automation scripts
+│   ├── validate-azd-config.sh      # Configuration validation
+│   ├── setup-local.sh              # Local development setup
+│   ├── validate-config.sh          # Pre-package validation hook
+│   ├── setup-bot.sh                # Post-provision bot registration
+│   └── generate-teams-manifest.sh  # Post-deploy manifest generation
+└── .azure/                 # azd environment files (auto-generated)
+```
+
+## Development Workflow
+
+### Validate Configuration
+```bash
+# Validate azd project structure
+./scripts/validate-azd-config.sh
+```
+
+### Local Testing
+```bash
+# Run application locally (after Phase 2 implementation)
+python src/app/main.py
+
+# Test with Bot Framework Emulator
+# See docs/testing.md for details
+```
+
+### Deploy Changes
+```bash
+# Deploy application updates
+azd deploy
+
+# Deploy infrastructure changes
+azd provision
+
+# Full redeploy
+azd up
+```
+
+### View Logs
+```bash
+# Stream container logs
+azd logs --service api
+
+# View in Azure Portal
+az container logs --resource-group <rg-name> --name <container-name>
+```
+
+## Environment Variables
+
+The following environment variables are automatically configured during deployment:
+
+| Variable | Description | Source |
+|----------|-------------|--------|
+| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI service endpoint | Bicep output |
+| `AZURE_OPENAI_DEPLOYMENT_NAME` | GPT-4 model deployment name | Bicep output |
+| `BOT_ID` | Azure Bot Service application ID | Bot registration |
+| `BOT_PASSWORD` | Bot application password | Key Vault |
+| `BOT_TENANT_ID` | Azure AD tenant ID | Bicep output |
+| `KEY_VAULT_NAME` | Key Vault name | Bicep output |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | Application Insights connection | Bicep output |
+
+## Architecture
+
+### Azure Resources
+
+- **Azure Container Apps**: Serverless container hosting
+- **Azure OpenAI Service**: GPT-4 model deployment
+- **Azure Bot Service**: Teams integration
+- **Azure Container Registry**: Container image storage
+- **Azure Key Vault**: Secrets management
+- **Application Insights**: Monitoring and telemetry
+- **Log Analytics Workspace**: Centralized logging
+
+### Application Stack
+
+- **Python 3.11+**: Core application runtime
+- **FastAPI**: Web framework for bot endpoints
+- **Microsoft Agent Framework**: AI agent orchestration
+- **Bot Framework SDK**: Teams messaging integration
+- **Azure SDK for Python**: Azure service integration
+
+## Deployment Hooks
+
+The `azure.yaml` configuration defines three deployment hooks:
+
+1. **prepackage**: Validates configuration before packaging
+2. **postprovision**: Registers bot and configures Azure resources
+3. **postdeploy**: Generates Teams app manifest
+
+See [scripts/README.md](scripts/README.md) for detailed hook documentation.
+
+## Documentation
+
+- [Scripts Documentation](scripts/README.md) - Automation scripts and hooks
+- [Infrastructure Guide](infra/README.md) - Bicep templates and Azure resources (Task 1.2+)
+- [Application Guide](src/README.md) - Python application architecture (Phase 2+)
+- [MCP Integration](docs/mcp-integration.md) - Model Context Protocol setup (Phase 3+)
+- [Teams Deployment](docs/teams-deployment.md) - Teams configuration guide (Phase 4+)
+
+## Project Status
+
+This project is under active development following a phased approach:
+
+- **Phase 1: Infrastructure Foundation** [In Progress]
+  - [x] Task 1.1: Project Structure & azd Configuration Setup
+  - [x] Task 1.2: Core Bicep Infrastructure Module
+  - [ ] Task 1.3-1.7: Additional infrastructure modules
+- **Phase 2: Agent Implementation** [Planned]
+- **Phase 3: MCP Integration** [Planned]
+- **Phase 4: Teams Deployment** [Planned]
+- **Phase 5: Validation & Documentation** [Planned]
+
+See `.taskmaster/tasks/` for detailed task tracking.
+
+## Testing
+
+### Configuration Validation
+```bash
+# Validate azd configuration
+./scripts/validate-azd-config.sh
+
+# Validate application configuration
+./scripts/validate-config.sh
+```
+
+### Infrastructure Testing
+```bash
+# Validate Bicep templates (Task 1.2+)
+az bicep build --file infra/main.bicep
+```
+
+### Application Testing
+```bash
+# Run unit tests (Phase 2+)
+pytest tests/
+
+# Run integration tests with Bot Framework Emulator
+# See docs/testing.md
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**azd command not found**
+- Install Azure Developer CLI: https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd
+
+**Deployment timeout**
+- Check Azure subscription quotas for Container Apps and OpenAI
+- Verify region availability for all required services
+
+**Bot not responding in Teams**
+- Verify Bot Service messaging endpoint matches Container App URL
+- Check Application Insights logs for errors
+- Validate Bot ID and Password in Key Vault
+
+For more troubleshooting guidance, see [docs/troubleshooting.md](docs/troubleshooting.md).
+
+## Contributing
+
+This is a structured project managed with TaskMaster AI. Contributions should follow the task-based workflow:
+
+1. Check `.taskmaster/tasks/` for available tasks
+2. Implement following the task acceptance criteria
+3. Update task status and add implementation notes
+4. Submit pull request referencing the task ID
 
 ## License
 
 License information will be added here.
+
+## Support
+
+For issues and questions:
+- Review existing documentation in `/docs`
+- Check Application Insights logs for runtime issues
+- Review Bicep deployment logs in Azure Portal
+
+---
+
+**Built with Azure Developer CLI** | **Powered by Azure OpenAI** | **Integrated with Microsoft Teams**
