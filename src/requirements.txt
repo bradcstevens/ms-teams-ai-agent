@@ -1,14 +1,35 @@
-# Python Dependencies for Azure AI Agent Framework
-# This file will be populated in Phase 2: Agent Implementation
+# Python Dependencies for Azure AI Agent Framework MVP
+# Phase 2: Agent Implementation
 
-# Core dependencies (to be added in Task 2.x):
-# fastapi>=0.104.0
-# uvicorn[standard]>=0.24.0
-# azure-identity>=1.15.0
-# azure-keyvault-secrets>=4.7.0
-# openai>=1.0.0
-# botbuilder-core>=4.15.0
-# botbuilder-schema>=4.15.0
-# applicationinsights>=0.11.10
+# Microsoft Agent Framework (Preview - Nov 2025)
+agent-framework>=1.0.0
 
-# TODO: Add complete dependencies in Phase 2
+# Azure OpenAI & Identity
+azure-identity>=1.15.0
+azure-keyvault-secrets>=4.7.0
+
+# Bot Framework SDK for Python
+botbuilder-core>=4.15.0
+botbuilder-schema>=4.15.0
+aiohttp>=3.9.0
+
+# FastAPI & Web Server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# Application Insights Telemetry
+opencensus-ext-azure>=1.1.13
+opencensus-ext-logging>=0.1.1
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# MCP Integration (Phase 3)
+httpx>=0.25.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0

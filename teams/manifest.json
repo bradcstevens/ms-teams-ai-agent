@@ -1,0 +1,80 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "1.0.0",
+  "id": "{{BOT_ID}}",
+  "packageName": "com.microsoft.teams.aiagent",
+  "developer": {
+    "name": "AI Agent Development Team",
+    "websiteUrl": "https://example.com",
+    "privacyUrl": "https://example.com/privacy",
+    "termsOfUseUrl": "https://example.com/terms"
+  },
+  "name": {
+    "short": "AI Agent",
+    "full": "AI Agent for Microsoft Teams"
+  },
+  "description": {
+    "short": "AI-powered assistant for Microsoft Teams",
+    "full": "An intelligent AI agent powered by Azure OpenAI that helps users with various tasks in Microsoft Teams. Built using the Microsoft Agent Framework, this bot can answer questions, assist with tasks, and integrate with MCP tools for extended functionality."
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "accentColor": "#0078D4",
+  "bots": [
+    {
+      "botId": "{{BOT_ID}}",
+      "scopes": [
+        "personal",
+        "team",
+        "groupchat"
+      ],
+      "supportsFiles": false,
+      "isNotificationOnly": false,
+      "commandLists": [
+        {
+          "scopes": [
+            "personal"
+          ],
+          "commands": [
+            {
+              "title": "help",
+              "description": "Get help and learn what I can do"
+            },
+            {
+              "title": "status",
+              "description": "Check my current status and capabilities"
+            }
+          ]
+        },
+        {
+          "scopes": [
+            "team",
+            "groupchat"
+          ],
+          "commands": [
+            {
+              "title": "help",
+              "description": "Get help and learn what I can do"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "*.azurecontainerapps.io",
+    "*.azure.com",
+    "api.botframework.com"
+  ],
+  "webApplicationInfo": {
+    "id": "{{BOT_ID}}",
+    "resource": "api://{{BOT_ENDPOINT}}"
+  }
+}

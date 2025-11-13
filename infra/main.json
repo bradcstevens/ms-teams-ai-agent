@@ -1,12 +1,646 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "languageVersion": "2.0",
   "contentVersion": "1.0.0.0",
   "metadata": {
     "_generator": {
       "name": "bicep",
       "version": "0.38.3.11034",
-      "templateHash": "7181113893302353750"
+      "templateHash": "16204211994763958087"
     }
   },
-  "resources": []
+  "parameters": {
+    "environmentName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "metadata": {
+        "description": "Environment name identifier (e.g., dev, test, prod)"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[deployment().location]",
+      "metadata": {
+        "description": "Primary Azure region for resources"
+      }
+    },
+    "principalId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Service principal ID for RBAC assignments (leave empty for interactive deployments)"
+      }
+    },
+    "openAiLocation": {
+      "type": "string",
+      "defaultValue": "eastus",
+      "allowedValues": [
+        "eastus",
+        "eastus2",
+        "southcentralus",
+        "westus",
+        "westus3",
+        "australiaeast",
+        "canadaeast",
+        "francecentral",
+        "japaneast",
+        "northcentralus",
+        "swedencentral",
+        "switzerlandnorth",
+        "uksouth"
+      ],
+      "metadata": {
+        "description": "Azure OpenAI service region (must support GPT-4)"
+      }
+    },
+    "openAiModelName": {
+      "type": "string",
+      "defaultValue": "gpt-4",
+      "metadata": {
+        "description": "Azure OpenAI model name for deployment"
+      }
+    },
+    "openAiModelVersion": {
+      "type": "string",
+      "defaultValue": "0613",
+      "metadata": {
+        "description": "Azure OpenAI model version"
+      }
+    },
+    "botDisplayName": {
+      "type": "string",
+      "defaultValue": "AI Agent for Teams",
+      "minLength": 1,
+      "maxLength": 256,
+      "metadata": {
+        "description": "Display name for the Teams bot"
+      }
+    },
+    "deploymentTimestamp": {
+      "type": "string",
+      "defaultValue": "[utcNow()]",
+      "metadata": {
+        "description": "Current timestamp for deployment tracking"
+      }
+    }
+  },
+  "variables": {
+    "abbrs": {
+      "resourceGroup": "rg",
+      "containerAppsEnvironment": "cae",
+      "containerApps": "ca",
+      "containerRegistry": "cr",
+      "openAiAccount": "oai",
+      "botService": "bot",
+      "keyVault": "kv",
+      "logAnalytics": "log",
+      "appInsights": "appi"
+    },
+    "resourceToken": "[toLower(uniqueString(subscription().id, parameters('environmentName'), parameters('location')))]",
+    "resourceGroupName": "[format('{0}-{1}-{2}', variables('abbrs').resourceGroup, parameters('environmentName'), variables('resourceToken'))]",
+    "tags": {
+      "azd-env-name": "[parameters('environmentName')]",
+      "project": "azure-ai-agent-teams",
+      "purpose": "AI agent framework MVP",
+      "deployment-method": "azd",
+      "deployment-timestamp": "[parameters('deploymentTimestamp')]"
+    }
+  },
+  "resources": {
+    "rg": {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('resourceGroupName')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('tags')]"
+    },
+    "logAnalytics": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('loganalytics-{0}', variables('resourceToken'))]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-{1}-{2}', variables('abbrs').logAnalytics, parameters('environmentName'), variables('resourceToken'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          },
+          "retentionInDays": {
+            "value": 30
+          },
+          "sku": {
+            "value": "PerGB2018"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.3.11034",
+              "templateHash": "9770631009143407608"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "minLength": 4,
+              "maxLength": 63,
+              "metadata": {
+                "description": "Name of the Log Analytics Workspace"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Azure region for the Log Analytics Workspace"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the Log Analytics Workspace"
+              }
+            },
+            "retentionInDays": {
+              "type": "int",
+              "defaultValue": 30,
+              "minValue": 30,
+              "maxValue": 730,
+              "metadata": {
+                "description": "Workspace retention period in days"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "PerGB2018",
+              "allowedValues": [
+                "PerGB2018",
+                "Free",
+                "Standalone",
+                "PerNode",
+                "Premium"
+              ],
+              "metadata": {
+                "description": "Pricing tier for the workspace"
+              }
+            }
+          },
+          "resources": {
+            "logAnalyticsWorkspace": {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "sku": {
+                  "name": "[parameters('sku')]"
+                },
+                "retentionInDays": "[parameters('retentionInDays')]",
+                "features": {
+                  "enableLogAccessUsingOnlyResourcePermissions": true
+                },
+                "workspaceCapping": {
+                  "dailyQuotaGb": -1
+                },
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+              }
+            }
+          },
+          "outputs": {
+            "workspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of the Log Analytics Workspace"
+              },
+              "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('name'))]"
+            },
+            "customerId": {
+              "type": "string",
+              "metadata": {
+                "description": "Customer ID (Workspace ID) for Log Analytics"
+              },
+              "value": "[reference('logAnalyticsWorkspace').customerId]"
+            },
+            "primarySharedKey": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Primary shared key for Log Analytics (for Container Apps Environment)"
+              },
+              "value": "[listKeys('logAnalyticsWorkspace', '2023-09-01').primarySharedKey]"
+            },
+            "workspaceName": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Log Analytics Workspace"
+              },
+              "value": "[parameters('name')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "rg"
+      ]
+    },
+    "applicationInsights": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('appinsights-{0}', variables('resourceToken'))]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-{1}-{2}', variables('abbrs').appInsights, parameters('environmentName'), variables('resourceToken'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          },
+          "workspaceId": {
+            "value": "[reference('logAnalytics').outputs.workspaceId.value]"
+          },
+          "applicationType": {
+            "value": "web"
+          },
+          "retentionInDays": {
+            "value": 90
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.3.11034",
+              "templateHash": "12724397180936819103"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255,
+              "metadata": {
+                "description": "Name of the Application Insights resource"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Azure region for Application Insights"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the Application Insights resource"
+              }
+            },
+            "workspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of the Log Analytics Workspace to link to"
+              }
+            },
+            "applicationType": {
+              "type": "string",
+              "defaultValue": "web",
+              "allowedValues": [
+                "web",
+                "other"
+              ],
+              "metadata": {
+                "description": "Application type for Application Insights"
+              }
+            },
+            "ingestionMode": {
+              "type": "string",
+              "defaultValue": "LogAnalytics",
+              "allowedValues": [
+                "LogAnalytics",
+                "ApplicationInsights",
+                "ApplicationInsightsWithDiagnosticSettings"
+              ],
+              "metadata": {
+                "description": "Ingestion mode for Application Insights"
+              }
+            },
+            "retentionInDays": {
+              "type": "int",
+              "defaultValue": 90,
+              "minValue": 30,
+              "maxValue": 730,
+              "metadata": {
+                "description": "Data retention period in days"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Insights/components",
+              "apiVersion": "2020-02-02",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "[parameters('applicationType')]",
+              "properties": {
+                "Application_Type": "[parameters('applicationType')]",
+                "WorkspaceResourceId": "[parameters('workspaceId')]",
+                "IngestionMode": "[parameters('ingestionMode')]",
+                "RetentionInDays": "[parameters('retentionInDays')]",
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled",
+                "DisableIpMasking": false,
+                "DisableLocalAuth": false
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of Application Insights"
+              },
+              "value": "[resourceId('Microsoft.Insights/components', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of Application Insights resource"
+              },
+              "value": "[parameters('name')]"
+            },
+            "connectionString": {
+              "type": "string",
+              "metadata": {
+                "description": "Application Insights connection string"
+              },
+              "value": "[reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').ConnectionString]"
+            },
+            "instrumentationKey": {
+              "type": "string",
+              "metadata": {
+                "description": "Application Insights instrumentation key"
+              },
+              "value": "[reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').InstrumentationKey]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "logAnalytics",
+        "rg"
+      ]
+    },
+    "containerAppsEnvironment": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('container-env-{0}', variables('resourceToken'))]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('{0}-{1}-{2}', variables('abbrs').containerAppsEnvironment, parameters('environmentName'), variables('resourceToken'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          },
+          "logAnalyticsCustomerId": {
+            "value": "[reference('logAnalytics').outputs.customerId.value]"
+          },
+          "logAnalyticsPrimarySharedKey": {
+            "value": "[listOutputsWithSecureValues('logAnalytics', '2025-04-01').primarySharedKey]"
+          },
+          "zoneRedundant": {
+            "value": "Disabled"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.3.11034",
+              "templateHash": "17268907908420482415"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 64,
+              "metadata": {
+                "description": "Name of the Container Apps Environment"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Azure region for the Container Apps Environment"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the Container Apps Environment"
+              }
+            },
+            "logAnalyticsCustomerId": {
+              "type": "string",
+              "metadata": {
+                "description": "Customer ID of the Log Analytics Workspace"
+              }
+            },
+            "logAnalyticsPrimarySharedKey": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Primary shared key of the Log Analytics Workspace"
+              }
+            },
+            "zoneRedundant": {
+              "type": "string",
+              "defaultValue": "Disabled",
+              "allowedValues": [
+                "Disabled",
+                "Enabled"
+              ],
+              "metadata": {
+                "description": "Zone redundancy mode for high availability"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/managedEnvironments",
+              "apiVersion": "2024-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "appLogsConfiguration": {
+                  "destination": "log-analytics",
+                  "logAnalyticsConfiguration": {
+                    "customerId": "[parameters('logAnalyticsCustomerId')]",
+                    "sharedKey": "[parameters('logAnalyticsPrimarySharedKey')]"
+                  }
+                },
+                "daprAIInstrumentationKey": null,
+                "daprAIConnectionString": null,
+                "zoneRedundant": "[equals(parameters('zoneRedundant'), 'Enabled')]"
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of the Container Apps Environment"
+              },
+              "value": "[resourceId('Microsoft.App/managedEnvironments', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Container Apps Environment"
+              },
+              "value": "[parameters('name')]"
+            },
+            "defaultDomain": {
+              "type": "string",
+              "metadata": {
+                "description": "Default domain for Container Apps in this environment"
+              },
+              "value": "[reference(resourceId('Microsoft.App/managedEnvironments', parameters('name')), '2024-03-01').defaultDomain]"
+            },
+            "staticIp": {
+              "type": "string",
+              "metadata": {
+                "description": "Static IP address of the Container Apps Environment"
+              },
+              "value": "[reference(resourceId('Microsoft.App/managedEnvironments', parameters('name')), '2024-03-01').staticIp]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "logAnalytics",
+        "rg"
+      ]
+    }
+  },
+  "outputs": {
+    "AZURE_OPENAI_ENDPOINT": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure OpenAI service endpoint URL"
+      },
+      "value": "https://placeholder-openai-endpoint.openai.azure.com/"
+    },
+    "AZURE_OPENAI_DEPLOYMENT_NAME": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure OpenAI GPT-4 deployment name"
+      },
+      "value": "[parameters('openAiModelName')]"
+    },
+    "BOT_ID": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Bot Service application ID"
+      },
+      "value": "placeholder-bot-id"
+    },
+    "KEY_VAULT_NAME": {
+      "type": "string",
+      "metadata": {
+        "description": "Key Vault name for secrets storage"
+      },
+      "value": "[format('{0}-{1}-{2}', variables('abbrs').keyVault, parameters('environmentName'), variables('resourceToken'))]"
+    },
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Insights connection string"
+      },
+      "value": "[reference('applicationInsights').outputs.connectionString.value]"
+    },
+    "CONTAINER_REGISTRY_ENDPOINT": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Container Registry login server endpoint"
+      },
+      "value": "[format('{0}{1}{2}.azurecr.io', variables('abbrs').containerRegistry, replace(parameters('environmentName'), '-', ''), variables('resourceToken'))]"
+    },
+    "CONTAINER_APP_NAME": {
+      "type": "string",
+      "metadata": {
+        "description": "Container App name for the API service"
+      },
+      "value": "[format('{0}-{1}-{2}', variables('abbrs').containerApps, parameters('environmentName'), variables('resourceToken'))]"
+    },
+    "CONTAINER_APP_ENVIRONMENT_NAME": {
+      "type": "string",
+      "metadata": {
+        "description": "Container Apps Environment name"
+      },
+      "value": "[reference('containerAppsEnvironment').outputs.name.value]"
+    },
+    "AZURE_RESOURCE_GROUP": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource group name for all resources"
+      },
+      "value": "[variables('resourceGroupName')]"
+    },
+    "AZURE_LOCATION": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region where resources are deployed"
+      },
+      "value": "[parameters('location')]"
+    },
+    "RESOURCE_TOKEN": {
+      "type": "string",
+      "metadata": {
+        "description": "Unique resource token for naming"
+      },
+      "value": "[variables('resourceToken')]"
+    }
+  }
 }

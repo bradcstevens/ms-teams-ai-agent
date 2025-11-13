@@ -1,0 +1,70 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/username/Documents"
+      ],
+      "transport": "stdio",
+      "enabled": true,
+      "description": "Provides file system access for reading and writing files"
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "transport": "stdio",
+      "enabled": true,
+      "description": "GitHub API integration for repository operations"
+    },
+    "azure-openai": {
+      "command": "python",
+      "args": [
+        "-m",
+        "mcp_azure_openai"
+      ],
+      "env": {
+        "AZURE_OPENAI_ENDPOINT": "${AZURE_OPENAI_ENDPOINT}",
+        "AZURE_OPENAI_API_KEY": "${AZURE_OPENAI_API_KEY}",
+        "AZURE_OPENAI_DEPLOYMENT": "${AZURE_OPENAI_DEPLOYMENT_NAME}"
+      },
+      "transport": "stdio",
+      "enabled": true,
+      "description": "Azure OpenAI integration for agent capabilities"
+    },
+    "custom-http-server": {
+      "command": "node",
+      "args": [
+        "custom-mcp-server.js"
+      ],
+      "env": {
+        "PORT": "3000",
+        "API_ENDPOINT": "https://api.example.com"
+      },
+      "transport": "sse",
+      "enabled": false,
+      "description": "Custom HTTP-based MCP server using Server-Sent Events"
+    },
+    "slack-integration": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-slack"
+      ],
+      "env": {
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+        "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
+      },
+      "transport": "stdio",
+      "enabled": false,
+      "description": "Slack workspace integration (disabled by default)"
+    }
+  }
+}

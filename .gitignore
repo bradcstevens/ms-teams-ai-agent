@@ -53,3 +53,12 @@ ENV/
 # Keep .azure directory structure but exclude secrets
 .azure/*/config.json
 .azure/*/.env
+
+.claude
+.claude-collective
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.taskmaster
+CLAUDE.md
+vitest.config.js

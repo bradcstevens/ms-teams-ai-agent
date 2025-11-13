@@ -1,6 +1,6 @@
 # Azure AI Agent Framework for Microsoft Teams
 
-A production-ready AI agent framework for Microsoft Teams, built with Azure Container Apps, Azure OpenAI, and the Microsoft Agent Framework. Deploy to Azure with a single command using Azure Developer CLI.
+An AI agent for Microsoft Teams, built with Azure Container Apps, Azure OpenAI, and the Microsoft Agent Framework. Deploy to Azure with a single command using Azure Developer CLI.
 
 ## Features
 
@@ -59,12 +59,32 @@ This single command will:
 4. Build and deploy container image
 5. Generate Teams app manifest (postdeploy hook)
 
-### 3. Configure Microsoft Teams
+### 3. Deploy to Microsoft Teams
 
-After deployment completes:
-1. Navigate to the output directory for the Teams app package
-2. Upload the generated `.zip` file to Teams Admin Center
-3. Install the app in your Teams organization
+After infrastructure deployment completes, deploy the bot to Teams:
+
+```bash
+# Deploy bot to Teams (automated)
+./scripts/deploy-teams-bot.sh \
+  --environment <dev|staging|prod> \
+  --resource-group <rg-name> \
+  --bot-name <bot-name> \
+  --endpoint <container-app-url>/api/messages \
+  --key-vault <key-vault-name> \
+  --version 1.0.0
+```
+
+This will:
+1. Register the bot in Azure Bot Service
+2. Generate Teams app manifest
+3. Create Teams app package (.zip)
+4. Validate deployment end-to-end
+
+Then upload the generated `teams-app-<env>-1.0.0.zip` to Teams Admin Center.
+
+**Detailed documentation:**
+- [Teams Deployment Guide](docs/TEAMS_DEPLOYMENT.md)
+- [Testing & Troubleshooting](docs/TEAMS_TESTING.md)
 
 ## Project Structure
 

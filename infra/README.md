@@ -52,20 +52,21 @@ infra/
 │
 ├── core/                       # Core infrastructure modules
 │   ├── host/
-│   │   ├── container-apps-environment.bicep  # Task 1.3
-│   │   ├── container-registry.bicep          # Task 1.4
-│   │   └── container-app.bicep               # Task 1.4
+│   │   ├── container-apps-environment.bicep  # Task 1.3 ✅
+│   │   ├── container-registry.bicep          # Task 1.4 ✅
+│   │   └── container-app.bicep               # Task 1.4 ✅
 │   └── monitor/
-│       └── monitoring.bicep                  # Task 1.7
+│       ├── loganalytics.bicep                # Task 1.3 ✅
+│       └── applicationinsights.bicep         # Task 1.3 ✅
 │
 ├── ai/
-│   └── openai.bicep                          # Task 1.5
+│   └── openai.bicep                          # Task 1.5 ✅
 │
 ├── bot/
-│   └── bot-service.bicep                     # Task 1.6
+│   └── bot-service.bicep                     # Task 1.6 ✅
 │
 └── security/
-    └── key-vault.bicep                       # Task 1.6
+    └── key-vault.bicep                       # Task 1.6 ✅
 ```
 
 ## Parameters
@@ -259,18 +260,136 @@ az deployment sub show \
   --query properties.outputs
 ```
 
+## Task 1.3: Networking & Environment Modules (COMPLETED)
+
+### Log Analytics Workspace (loganalytics.bicep)
+
+**Purpose**: Centralized logging infrastructure for Container Apps and Application Insights.
+
+**Parameters**:
+- `name` (string): Name of the Log Analytics Workspace
+- `location` (string): Azure region for deployment
+- `tags` (object): Resource tags
+- `retentionInDays` (int): Log retention period (default: 30 days, range: 30-730)
+- `sku` (string): Pricing tier (default: 'PerGB2018')
+
+**Outputs**:
+- `workspaceId`: Resource ID for linking other resources
+- `customerId`: Workspace ID for Container Apps Environment
+- `primarySharedKey`: Shared key for Container Apps (marked as `@secure()`)
+- `workspaceName`: Name of the workspace
+
+**Configuration**:
+- Public network access enabled for ingestion and query (MVP)
+- No daily quota cap configured
+- Resource-based permissions enabled
+
+### Application Insights (applicationinsights.bicep)
+
+**Purpose**: Application performance monitoring and telemetry for the AI agent.
+
+**Parameters**:
+- `name` (string): Name of the Application Insights resource
+- `location` (string): Azure region for deployment
+- `tags` (object): Resource tags
+- `workspaceId` (string): Resource ID of Log Analytics Workspace
+- `applicationType` (string): Application type (default: 'web')
+- `retentionInDays` (int): Data retention period (default: 90 days, range: 30-730)
+
+**Outputs**:
+- `id`: Resource ID
+- `name`: Resource name
+- `connectionString`: Full connection string for SDK integration
+- `instrumentationKey`: Legacy instrumentation key
+
+**Configuration**:
+- Linked to Log Analytics Workspace for unified logging
+- Public network access enabled (MVP)
+- IP masking enabled for privacy
+- Connection string authentication enabled
+
+### Container Apps Environment (container-apps-environment.bicep)
+
+**Purpose**: Serverless container hosting environment with public ingress.
+
+**Parameters**:
+- `name` (string): Name of the Container Apps Environment
+- `location` (string): Azure region for deployment
+- `tags` (object): Resource tags
+- `logAnalyticsCustomerId`: Customer ID from Log Analytics
+- `logAnalyticsPrimarySharedKey`: Shared key from Log Analytics (marked as `@secure()`)
+- `zoneRedundant` (string): Zone redundancy setting (default: 'Disabled' for MVP)
+
+**Outputs**:
+- `id`: Resource ID of the environment
+- `name`: Name of the environment
+- `defaultDomain`: Default domain for Container Apps
+- `staticIp`: Static IP address assigned to the environment
+
+**Configuration**:
+- Public ingress (no VNet integration for MVP)
+- Zone redundancy disabled for cost optimization
+- Logs sent to Log Analytics Workspace
+- Dapr disabled for MVP (can be enabled post-MVP)
+
+### Dependency Chain
+
+```
+Log Analytics Workspace
+      ↓
+Application Insights (requires workspaceId)
+      ↓
+Container Apps Environment (requires customerId + sharedKey)
+```
+
+### Integration with main.bicep
+
+The modules are orchestrated in main.bicep with proper dependency ordering:
+
+```bicep
+module logAnalytics './core/monitor/loganalytics.bicep' = { ... }
+module applicationInsights './core/monitor/applicationinsights.bicep' = {
+  // depends on: logAnalytics.outputs.workspaceId
+}
+module containerAppsEnvironment './core/host/container-apps-environment.bicep' = {
+  // depends on: logAnalytics.outputs.customerId and primarySharedKey
+}
+```
+
+**Output Mapping**:
+- `APPLICATIONINSIGHTS_CONNECTION_STRING` → applicationInsights.outputs.connectionString
+- `CONTAINER_APP_ENVIRONMENT_NAME` → containerAppsEnvironment.outputs.name
+
+### Validation
+
+All modules validated with 29 passing tests:
+```bash
+./validate-networking.sh
+```
+
+Tests cover:
+- Module file existence
+- Bicep compilation
+- Parameter definitions
+- Output definitions
+- Main template integration
+- API version compliance
+
 ## Module Implementation Status
 
 | Task | Module | Status | Description |
 |------|--------|--------|-------------|
 | 1.2 | main.bicep | ✅ Complete | Main orchestration template |
-| 1.3 | monitoring.bicep | ⏳ Pending | Log Analytics & App Insights |
-| 1.3 | container-apps-environment.bicep | ⏳ Pending | Container Apps Environment |
-| 1.4 | container-registry.bicep | ⏳ Pending | Azure Container Registry |
-| 1.4 | container-app.bicep | ⏳ Pending | Container App definition |
-| 1.5 | openai.bicep | ⏳ Pending | Azure OpenAI Service |
-| 1.6 | bot-service.bicep | ⏳ Pending | Azure Bot Service |
-| 1.6 | key-vault.bicep | ⏳ Pending | Azure Key Vault |
+| 1.3 | loganalytics.bicep | ✅ Complete | Log Analytics Workspace |
+| 1.3 | applicationinsights.bicep | ✅ Complete | Application Insights |
+| 1.3 | container-apps-environment.bicep | ✅ Complete | Container Apps Environment |
+| 1.4 | container-registry.bicep | ✅ Complete | Azure Container Registry |
+| 1.4 | container-app.bicep | ✅ Complete | Container App definition |
+| 1.5 | openai.bicep | ✅ Complete | Azure OpenAI Service |
+| 1.6 | bot-service.bicep | ✅ Complete | Azure Bot Service |
+| 1.6 | key-vault.bicep | ✅ Complete | Azure Key Vault |
+| 1.7 | validate-structure.sh | ✅ Complete | Structure validation script |
+| 1.7 | validate-bicep.sh | ✅ Complete | Bicep compilation validation |
 
 ## Best Practices
 
