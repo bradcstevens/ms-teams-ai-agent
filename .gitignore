@@ -62,3 +62,8 @@ ENV/
 .taskmaster
 CLAUDE.md
 vitest.config.js
+# Test reports and validation outputs
+reports/
+htmlcov/
+coverage.json
+.coverage
