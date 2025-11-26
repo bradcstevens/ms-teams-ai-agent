@@ -39,7 +39,8 @@ def validate_jwt_token(auth_header: str, bot_id: str) -> bool:
             options={
                 "verify_signature": False,  # Will be verified by Bot Framework Adapter
                 "verify_aud": True,
-                "verify_exp": True
+                "verify_exp": True,
+                "require": ["exp", "aud"]  # Require exp and aud claims for validation
             },
             audience=bot_id,
             algorithms=['RS256', 'HS256']

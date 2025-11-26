@@ -16,6 +16,14 @@ param tags object = {}
 @description('Principal ID for RBAC role assignment (user or service principal)')
 param principalId string = ''
 
+@description('Principal type for RBAC role assignment')
+@allowed([
+  'User'
+  'Group'
+  'ServicePrincipal'
+])
+param principalType string = 'User'
+
 @description('Key Vault SKU')
 @allowed([
   'standard'
@@ -85,7 +93,7 @@ resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', keyVaultSecretsOfficerRoleId)
     principalId: principalId
-    principalType: 'ServicePrincipal'
+    principalType: principalType
   }
 }
 

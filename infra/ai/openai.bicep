@@ -19,11 +19,11 @@ param tags object = {}
 ])
 param sku string = 'S0'
 
-@description('Model name for deployment (e.g., gpt-4, gpt-35-turbo)')
-param modelName string = 'gpt-4'
+@description('Model name for deployment (e.g., gpt-4o, gpt-4-turbo)')
+param modelName string = 'gpt-4o'
 
 @description('Model version')
-param modelVersion string = '0613'
+param modelVersion string = '2024-08-06'
 
 @description('Deployment name for the model')
 param deploymentName string = modelName

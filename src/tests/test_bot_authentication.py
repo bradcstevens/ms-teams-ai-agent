@@ -5,7 +5,7 @@ TDD: Write tests first, then implement authentication middleware
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class TestBotAuthentication:
@@ -14,11 +14,12 @@ class TestBotAuthentication:
     @pytest.fixture
     def mock_jwt_token(self):
         """Generate mock JWT token for testing."""
+        now = datetime.now(timezone.utc)
         payload = {
             'aud': 'test-bot-id',
             'iss': 'https://api.botframework.com',
-            'exp': (datetime.utcnow() + timedelta(hours=1)).timestamp(),
-            'nbf': datetime.utcnow().timestamp(),
+            'exp': int((now + timedelta(hours=1)).timestamp()),
+            'nbf': int(now.timestamp()),
             'serviceUrl': 'https://smba.trafficmanager.net/amer/'
         }
         return jwt.encode(payload, 'test-secret', algorithm='HS256')
@@ -26,11 +27,12 @@ class TestBotAuthentication:
     @pytest.fixture
     def expired_jwt_token(self):
         """Generate expired JWT token for testing."""
+        now = datetime.now(timezone.utc)
         payload = {
             'aud': 'test-bot-id',
             'iss': 'https://api.botframework.com',
-            'exp': (datetime.utcnow() - timedelta(hours=1)).timestamp(),
-            'nbf': datetime.utcnow().timestamp(),
+            'exp': int((now - timedelta(hours=1)).timestamp()),
+            'nbf': int(now.timestamp()),
         }
         return jwt.encode(payload, 'test-secret', algorithm='HS256')
 
@@ -100,6 +102,8 @@ class TestBotAuthentication:
         request = MagicMock(spec=Request)
         request.headers = {"Authorization": f"Bearer {mock_jwt_token}"}
         request.app.state.bot_id = "test-bot-id"
+        # Set the URL path to /api/messages to trigger authentication
+        request.url.path = "/api/messages"
 
         call_next = AsyncMock(return_value="response")
 
@@ -117,6 +121,8 @@ class TestBotAuthentication:
         request = MagicMock(spec=Request)
         request.headers = {"Authorization": "Bearer invalid-token"}
         request.app.state.bot_id = "test-bot-id"
+        # Set the URL path to /api/messages to trigger authentication
+        request.url.path = "/api/messages"
 
         call_next = AsyncMock()
 

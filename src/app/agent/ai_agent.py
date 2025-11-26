@@ -1,8 +1,8 @@
 """Azure OpenAI agent using Microsoft Agent Framework."""
-from typing import Optional
+from typing import Optional, Callable
 from agent_framework import ChatAgent
 from agent_framework.azure import AzureOpenAIChatClient
-from azure.identity import DefaultAzureCredential, AzureCliCredential
+from azure.identity import DefaultAzureCredential, AzureCliCredential, get_bearer_token_provider
 from azure.identity.aio import DefaultAzureCredential as AsyncDefaultAzureCredential
 
 from app.config.settings import settings
@@ -18,6 +18,7 @@ class TeamsAIAgent:
         """Initialize the Teams AI Agent."""
         self._agent: Optional[ChatAgent] = None
         self._credential = None
+        self._token_provider: Optional[Callable] = None
 
     async def initialize(self):
         """Initialize the agent with Azure OpenAI client.
@@ -29,17 +30,22 @@ class TeamsAIAgent:
             # Choose credential based on environment
             if settings.is_production:
                 logger.info("Initializing agent with DefaultAzureCredential (production)")
-                self._credential = AsyncDefaultAzureCredential()
+                self._credential = DefaultAzureCredential()
             else:
                 logger.info("Initializing agent with AzureCliCredential (development)")
-                # Use sync credential for development
                 self._credential = AzureCliCredential()
+
+            # Create token provider for Azure OpenAI
+            self._token_provider = get_bearer_token_provider(
+                self._credential,
+                "https://cognitiveservices.azure.com/.default"
+            )
 
             # Create Azure OpenAI chat client
             chat_client = AzureOpenAIChatClient(
                 endpoint=settings.azure_openai_endpoint,
-                credential=self._credential,
-                ai_model_id=settings.azure_openai_deployment_name,
+                ad_token_provider=self._token_provider,
+                deployment_name=settings.azure_openai_deployment_name,
                 api_version=settings.azure_openai_api_version
             )
 

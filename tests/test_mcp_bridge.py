@@ -63,7 +63,7 @@ class TestMCPToolBridge:
             "id": 1,
             "result": {"content": "file contents here"},
         }
-        mock_manager.get_client.return_value = mock_client
+        mock_manager.get_client = AsyncMock(return_value=mock_client)
 
         # Execute tool
         result = await bridge.execute_tool(
@@ -85,7 +85,7 @@ class TestMCPToolBridge:
             "id": 1,
             "result": {},
         }
-        mock_manager.get_client.return_value = mock_client
+        mock_manager.get_client = AsyncMock(return_value=mock_client)
 
         await bridge.execute_tool("filesystem.read_file", {"path": "/test.txt"})
 
@@ -111,7 +111,7 @@ class TestMCPToolBridge:
     async def test_execute_tool_no_client(self, bridge, mock_registry, mock_manager, sample_tool):
         """Test executing when client is unavailable."""
         mock_registry.get_tool.return_value = sample_tool
-        mock_manager.get_client.return_value = None
+        mock_manager.get_client = AsyncMock(return_value=None)
 
         with pytest.raises(MCPConnectionError, match="No client available"):
             await bridge.execute_tool("filesystem.read_file", {"path": "/test.txt"})
@@ -125,7 +125,7 @@ class TestMCPToolBridge:
 
         mock_client = AsyncMock()
         mock_client.send_request.side_effect = MCPConnectionError("Connection lost")
-        mock_manager.get_client.return_value = mock_client
+        mock_manager.get_client = AsyncMock(return_value=mock_client)
 
         with pytest.raises(MCPConnectionError, match="Connection lost"):
             await bridge.execute_tool("filesystem.read_file", {"path": "/test.txt"})
@@ -139,7 +139,7 @@ class TestMCPToolBridge:
 
         mock_client = AsyncMock()
         mock_client.send_request.side_effect = MCPTimeoutError("Request timed out")
-        mock_manager.get_client.return_value = mock_client
+        mock_manager.get_client = AsyncMock(return_value=mock_client)
 
         with pytest.raises(MCPTimeoutError, match="Request timed out"):
             await bridge.execute_tool("filesystem.read_file", {"path": "/test.txt"})
@@ -153,7 +153,7 @@ class TestMCPToolBridge:
 
         mock_client = AsyncMock()
         mock_client.send_request.side_effect = MCPTransportError("Transport failed")
-        mock_manager.get_client.return_value = mock_client
+        mock_manager.get_client = AsyncMock(return_value=mock_client)
 
         with pytest.raises(MCPTransportError, match="Transport failed"):
             await bridge.execute_tool("filesystem.read_file", {"path": "/test.txt"})
@@ -186,7 +186,7 @@ class TestMCPToolBridge:
             "id": 1,
             "result": {"user_id": "12345"},
         }
-        mock_manager.get_client.return_value = mock_client
+        mock_manager.get_client = AsyncMock(return_value=mock_client)
 
         params = {
             "name": "John Doe",
@@ -216,7 +216,7 @@ class TestMCPToolBridge:
             "id": 1,
             "error": {"code": -32601, "message": "Method not found"},
         }
-        mock_manager.get_client.return_value = mock_client
+        mock_manager.get_client = AsyncMock(return_value=mock_client)
 
         with pytest.raises(Exception, match="Method not found"):
             await bridge.execute_tool("filesystem.read_file", {"path": "/test.txt"})
@@ -316,7 +316,7 @@ class TestMCPToolBridge:
             "id": 1,
             "result": {"status": "ok"},
         }
-        mock_manager.get_client.return_value = mock_client
+        mock_manager.get_client = AsyncMock(return_value=mock_client)
 
         result = await bridge.execute_tool("system.get_status", {})
 
@@ -333,7 +333,7 @@ class TestMCPToolBridge:
             "id": 1,
             "result": None,
         }
-        mock_manager.get_client.return_value = mock_client
+        mock_manager.get_client = AsyncMock(return_value=mock_client)
 
         result = await bridge.execute_tool("filesystem.read_file", {"path": "/test.txt"})
 
@@ -352,7 +352,7 @@ class TestMCPToolBridge:
             "id": 1,
             "result": {},
         }
-        mock_manager.get_client.return_value = mock_client
+        mock_manager.get_client = AsyncMock(return_value=mock_client)
 
         await bridge.execute_tool("filesystem.read_file", {"path": "/test.txt"})
 

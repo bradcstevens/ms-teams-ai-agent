@@ -31,13 +31,15 @@ param sku string = 'F0'
 @description('Microsoft App ID (MSI) for the bot')
 param microsoftAppId string = ''
 
-@description('Bot authentication type')
+@description('Microsoft App Tenant ID for SingleTenant auth')
+param microsoftAppTenantId string = ''
+
+@description('Bot authentication type - MultiTenant deprecated as of 2025')
 @allowed([
-  'MultiTenant'
   'SingleTenant'
   'UserAssignedMSI'
 ])
-param microsoftAppType string = 'MultiTenant'
+param microsoftAppType string = 'SingleTenant'
 
 // ============================================================================
 // BOT SERVICE
@@ -56,6 +58,7 @@ resource botService 'Microsoft.BotService/botServices@2022-09-15' = {
     endpoint: botEndpoint
     msaAppId: microsoftAppId
     msaAppType: microsoftAppType
+    msaAppTenantId: microsoftAppTenantId
     // Microsoft Teams specific configuration
     schemaTransformationVersion: '1.3'
 

@@ -2,6 +2,11 @@
 // Task 1.2: Core Bicep Infrastructure Module (main.bicep)
 // Azure AI Agent Framework for Microsoft Teams - MVP
 // Orchestrates all infrastructure modules for Container Apps, Azure OpenAI, Bot Service, and monitoring
+//
+// Security Note: For production deployments, consider adding:
+// - Azure Front Door with WAF policy for DDoS protection and global load balancing
+// - Application Gateway with WAF for regional deployments
+// - See docs/ARCHITECTURE.md for security enhancement options
 
 targetScope = 'subscription'
 
@@ -19,6 +24,14 @@ param location string = deployment().location
 
 @description('Service principal ID for RBAC assignments (leave empty for interactive deployments)')
 param principalId string = ''
+
+@description('Principal type for RBAC role assignments')
+@allowed([
+  'User'
+  'Group'
+  'ServicePrincipal'
+])
+param principalType string = 'User'
 
 @description('Azure OpenAI service region (must support GPT-4)')
 @allowed([
@@ -39,15 +52,21 @@ param principalId string = ''
 param openAiLocation string = 'eastus'
 
 @description('Azure OpenAI model name for deployment')
-param openAiModelName string = 'gpt-4'
+param openAiModelName string = 'gpt-4o'
 
 @description('Azure OpenAI model version')
-param openAiModelVersion string = '0613'
+param openAiModelVersion string = '2024-08-06'
 
 @description('Display name for the Teams bot')
 @minLength(1)
 @maxLength(256)
 param botDisplayName string = 'AI Agent for Teams'
+
+@description('Bot App Registration ID (leave empty to skip bot service deployment)')
+param botAppId string = ''
+
+@description('Bot App Tenant ID for SingleTenant auth')
+param botTenantId string = ''
 
 @description('Current timestamp for deployment tracking')
 param deploymentTimestamp string = utcNow()
@@ -160,10 +179,11 @@ module containerApp './core/host/container-app.bicep' = {
   scope: rg
   params: {
     containerAppName: '${abbrs.containerApps}-${environmentName}-${resourceToken}'
-    containerAppsEnvironmentId: containerAppsEnvironment.outputs.containerAppsEnvironmentId
+    containerAppsEnvironmentId: containerAppsEnvironment.outputs.id
     containerRegistryName: containerRegistry.outputs.containerRegistryName
     location: location
-    tags: tags
+    tags: union(tags, { 'azd-service-name': 'api' })
+    targetPort: 8000
   }
   dependsOn: [
     containerAppsEnvironment
@@ -187,13 +207,17 @@ module openAi './ai/openai.bicep' = {
 
 // Task 1.6: Bot Service & Security Module
 // Azure Bot Service and Key Vault
-module botService './bot/bot-service.bicep' = {
+// Bot Service is only deployed when botAppId is provided
+// For MVP: Run create-bot-registration.sh first, then redeploy with botAppId
+module botService './bot/bot-service.bicep' = if (!empty(botAppId)) {
   name: 'bot-${resourceToken}'
   scope: rg
   params: {
     botName: '${abbrs.botService}-${environmentName}-${resourceToken}'
     botDisplayName: botDisplayName
     botEndpoint: 'https://${containerApp.outputs.containerAppFqdn}/api/messages'
+    microsoftAppId: botAppId
+    microsoftAppTenantId: botTenantId
     location: 'global'
     tags: tags
   }
@@ -206,9 +230,11 @@ module keyVault './security/key-vault.bicep' = {
   name: 'keyvault-${resourceToken}'
   scope: rg
   params: {
-    keyVaultName: '${abbrs.keyVault}-${environmentName}-${resourceToken}'
+    // Key Vault names max 24 chars, so use shortened format: kv-<resourceToken>
+    keyVaultName: '${abbrs.keyVault}-${resourceToken}'
     location: location
     principalId: principalId
+    principalType: principalType
     tags: tags
   }
 }
@@ -225,7 +251,7 @@ output AZURE_OPENAI_ENDPOINT string = openAi.outputs.endpoint
 output AZURE_OPENAI_DEPLOYMENT_NAME string = openAi.outputs.deploymentName
 
 @description('Azure Bot Service application ID')
-output BOT_ID string = botService.outputs.botId
+output BOT_ID string = !empty(botAppId) ? botService.outputs.botId : ''
 
 @description('Key Vault name for secrets storage')
 output KEY_VAULT_NAME string = keyVault.outputs.keyVaultName
@@ -239,11 +265,17 @@ output APPLICATIONINSIGHTS_CONNECTION_STRING string = applicationInsights.output
 @description('Azure Container Registry login server endpoint')
 output CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.outputs.loginServer
 
+@description('Azure Container Registry endpoint for azd')
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.outputs.loginServer
+
 @description('Azure Container Registry name')
 output CONTAINER_REGISTRY_NAME string = containerRegistry.outputs.containerRegistryName
 
 @description('Container App name for the API service')
 output CONTAINER_APP_NAME string = containerApp.outputs.containerAppName
+
+@description('Container App name for azd service mapping (api service)')
+output SERVICE_API_NAME string = containerApp.outputs.containerAppName
 
 @description('Container App URL')
 output CONTAINER_APP_URL string = containerApp.outputs.containerAppUrl

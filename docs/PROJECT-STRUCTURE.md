@@ -1,7 +1,7 @@
 # MS Teams AI Agent - Project Structure
 
-**Last Updated:** 2025-11-24
-**Status:** Phase 5 - Validation & Documentation Complete
+**Last Updated:** 2025-11-25
+**Status:** Phase 5 - Validation & Documentation In Progress
 
 ---
 
@@ -126,9 +126,15 @@ General project documentation for integration guides and deployment procedures.
 
 **Contents:**
 - **PROJECT-STRUCTURE.md** - Complete project structure overview (this file)
+- **ARCHITECTURE.md** - System design and component interactions
+- **OPERATIONS.md** - Monitoring, logging, and maintenance guide
+- **DEVELOPER_GUIDE.md** - Developer onboarding and contribution workflow
+- **API_REFERENCE.md** - Bot endpoint and webhook API documentation
 - **MCP_INTEGRATION.md** - MCP server integration guide
 - **TEAMS_DEPLOYMENT.md** - Teams deployment procedures
 - **TEAMS_TESTING.md** - Teams app testing guide
+- **validation/** - Deployment validation documentation
+  - **DEPLOYMENT-VALIDATION-INSTRUCTIONS.md** - Validation procedures
 
 **Audience:** All team members, new developers, architects
 
@@ -335,8 +341,11 @@ Python virtual environment.
 | Document | Location | Purpose |
 |----------|----------|---------|
 | **Project Overview** | `README.md` | Quick start and overview |
+| **Architecture** | `docs/ARCHITECTURE.md` | System design and components |
+| **Operations Guide** | `docs/OPERATIONS.md` | Monitoring and maintenance |
+| **Developer Guide** | `docs/DEVELOPER_GUIDE.md` | Developer onboarding |
+| **API Reference** | `docs/API_REFERENCE.md` | Endpoint documentation |
 | **Deployment Guide** | `docs/validation/DEPLOYMENT-VALIDATION-INSTRUCTIONS.md` | Deploy and validate |
-| **Test Results** | `docs/validation/TEST-RESULTS-REPORT.md` | Quality assessment |
 | **MCP Integration** | `docs/MCP_INTEGRATION.md` | MCP server setup |
 | **Teams Deployment** | `docs/TEAMS_DEPLOYMENT.md` | Teams app deployment |
 
@@ -410,5 +419,5 @@ azd down --purge --force
 ---
 
 **Project Structure Maintained By:** Development Team
-**Last Major Update:** 2025-11-24 (Phase 5 Completion)
-**Next Review:** After Phase 6 or major feature additions
+**Last Major Update:** 2025-11-25 (Documentation Enhancement)
+**Next Review:** After Phase 5 completion or major feature additions

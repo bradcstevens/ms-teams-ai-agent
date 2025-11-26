@@ -284,7 +284,7 @@ class TestDiscoverToolsFromManager:
             },
         }
 
-        mock_manager.get_client.return_value = mock_client
+        mock_manager.get_client = AsyncMock(return_value=mock_client)
         mock_manager.list_servers.return_value = ["filesystem"]
 
         result = await discover_tools_from_manager(mock_manager)
@@ -299,7 +299,7 @@ class TestDiscoverToolsFromManager:
         mock_manager = MagicMock()
 
         # Create different responses for different servers
-        def get_client_side_effect(server_name):
+        async def get_client_side_effect(server_name):
             client = AsyncMock(spec=MCPClient)
             client._connected = True
 
@@ -334,7 +334,7 @@ class TestDiscoverToolsFromManager:
 
             return client
 
-        mock_manager.get_client.side_effect = get_client_side_effect
+        mock_manager.get_client = get_client_side_effect
         mock_manager.list_servers.return_value = ["filesystem", "web"]
 
         result = await discover_tools_from_manager(mock_manager)
@@ -361,7 +361,7 @@ class TestDiscoverToolsFromManager:
         """Test handling errors from one server while others succeed."""
         mock_manager = MagicMock()
 
-        def get_client_side_effect(server_name):
+        async def get_client_side_effect(server_name):
             client = AsyncMock(spec=MCPClient)
             client._connected = True
 
@@ -384,7 +384,7 @@ class TestDiscoverToolsFromManager:
 
             return client
 
-        mock_manager.get_client.side_effect = get_client_side_effect
+        mock_manager.get_client = get_client_side_effect
         mock_manager.list_servers.return_value = ["filesystem", "web"]
 
         result = await discover_tools_from_manager(mock_manager)
@@ -400,7 +400,7 @@ class TestDiscoverToolsFromManager:
         """Test handling when manager cannot provide client."""
         mock_manager = MagicMock()
         mock_manager.list_servers.return_value = ["filesystem"]
-        mock_manager.get_client.return_value = None
+        mock_manager.get_client = AsyncMock(return_value=None)
 
         result = await discover_tools_from_manager(mock_manager)
 

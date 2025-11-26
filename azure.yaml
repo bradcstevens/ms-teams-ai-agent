@@ -17,9 +17,10 @@ services:
     host: containerapp
 
     # Container image configuration
+    # Note: paths are relative to the 'project' directory (./src)
     docker:
-      path: ./src/Dockerfile
-      context: ./src
+      path: ./Dockerfile
+      context: .
 
     # Environment variables for the container
     # These will be populated from infrastructure outputs
@@ -39,6 +40,7 @@ services:
       APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
 
       # Application Configuration
+      ENVIRONMENT: "production"
       PYTHON_ENV: "production"
       LOG_LEVEL: "INFO"
 

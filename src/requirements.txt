@@ -2,7 +2,8 @@
 # Phase 2: Agent Implementation
 
 # Microsoft Agent Framework (Preview - Nov 2025)
-agent-framework>=1.0.0
+# Using latest beta version as stable 1.0.0 not yet released
+agent-framework>=1.0.0b251120
 
 # Azure OpenAI & Identity
 azure-identity>=1.15.0

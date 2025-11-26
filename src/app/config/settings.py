@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     azure_openai_api_version: str = "2024-10-21"
 
     # Bot Service Configuration
-    bot_id: str
+    bot_id: Optional[str] = None  # Optional until bot is registered
     bot_password: Optional[str] = None  # Optional for managed identity
 
     # Key Vault Configuration (optional for local dev)
