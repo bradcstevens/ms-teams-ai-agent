@@ -1,4 +1,4 @@
-# Teams AI Agent - Phase 2: Agent Implementation
+# Teams AI Agent - Agent Implementation
 
 Python AI Agent implementation using Microsoft Agent Framework for Microsoft Teams integration.
 
@@ -41,62 +41,62 @@ src/
 
 ## Features Implemented
 
-### Task 2.1: Microsoft Agent Framework Setup ✅
+### Microsoft Agent Framework
 - Azure OpenAI ChatAgent with DefaultAzureCredential
 - Support for both managed identity (production) and Azure CLI (development)
 - Conversation thread management
 - Streaming response support (prepared for future use)
 
-### Task 2.2: Bot Framework Adapter ✅
+### Bot Framework Adapter
 - BotFrameworkAdapter with Teams authentication
 - Activity handler for message and conversation update events
 - Welcome messages for new users
 - Typing indicators during processing
 
-### Task 2.3: FastAPI Webhook Application ✅
+### FastAPI Webhook Application
 - `/api/messages` endpoint with Bot Framework authentication
 - `/health` endpoint for Container Apps health checks
 - Error handling middleware
 - Structured logging integration
 
-### Task 2.4: Conversation State Management ✅
+### Conversation State Management
 - In-memory conversation store with thread tracking
 - Automatic cleanup of expired conversations (30-minute timeout)
 - Thread context persistence across messages
 - Migration path documented for Redis/Cosmos DB
 
-### Task 2.5: Azure OpenAI Integration ✅
+### Azure OpenAI Integration
 - Integrated through Microsoft Agent Framework
 - Managed identity authentication
 - Automatic retry logic (handled by Agent Framework)
 - Error handling with user-friendly messages
 
-### Task 2.6: Teams Message Formatting ✅
+### Teams Message Formatting
 - @mention handling and text extraction
 - Direct vs. channel message detection
 - Input sanitization and validation
 - Teams-compatible response formatting
 
-### Task 2.7: Error Handling & Telemetry ✅
+### Error Handling & Telemetry
 - Application Insights integration with OpenCensus
 - Structured logging with correlation IDs
 - Exception handlers at all levels
 - User-friendly error messages for Teams
 
-### Task 2.8: Container Packaging ✅
+### Container Packaging
 - Multi-stage Dockerfile with Python 3.11
 - Non-root user execution
 - Health check endpoint validation
 - Optimized image size with slim base
 
-### Task 3.1: MCP Configuration Schema & Loader ✅
+### MCP Configuration Schema & Loader
 - Pydantic models for MCP server configuration validation
 - JSON schema support for `mcp_servers.json`
 - Environment variable substitution (${VAR_NAME} syntax)
 - Server registry with enable/disable flags
 - Support for STDIO and SSE transport types
 - Comprehensive error handling and validation
-- Complete test coverage (22 passing tests)
+- Complete test coverage
 
 ## Local Development Setup
 
@@ -104,7 +104,7 @@ src/
 
 1. Python 3.11 or later
 2. Azure CLI (`az login` authenticated)
-3. Azure OpenAI resource with GPT-4 deployment
+3. Azure OpenAI resource with GPT-5 deployment
 4. Bot Service registration (can be created later for testing)
 
 ### Installation
@@ -301,7 +301,7 @@ Set via Azure Container Apps environment:
 
 ## Testing
 
-### Unit Tests (To be implemented in Task 2.8+)
+### Unit Tests
 
 ```bash
 # Run tests

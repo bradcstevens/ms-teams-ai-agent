@@ -1,5 +1,4 @@
 // Azure Container Registry Module
-// Task 1.4: Container Infrastructure Bicep Module
 // Creates Azure Container Registry with admin credentials for container image storage
 
 @description('Name of the Azure Container Registry (alphanumeric only, globally unique)')

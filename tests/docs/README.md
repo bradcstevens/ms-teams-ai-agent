@@ -350,19 +350,14 @@ ruff check src/app --fix
 ## Additional Resources
 
 ### Project Documentation (`docs/`)
-- `PROJECT-STRUCTURE.md` - Complete project structure
+- `ARCHITECTURE.md` - System architecture
+- `DEVELOPER_GUIDE.md` - Development setup and API reference
+- `OPERATIONS.md` - Operations and troubleshooting
 - `MCP_INTEGRATION.md` - MCP server integration guide
-- `TEAMS_DEPLOYMENT.md` - Teams deployment procedures
-- `TEAMS_TESTING.md` - Teams app testing guide
-
-### TaskMaster
-- `.taskmaster/tasks/` - Project tasks and progress
-- Task 5.7 - Deployment validation framework
-- Task 5.8 - Test suite execution and analysis
+- `TEAMS_GUIDE.md` - Teams deployment and testing
 
 ---
 
 **Location:** `/tests/docs/`
 **Maintained By:** Development Team
-**Last Updated:** 2025-11-24
-**Related:** TaskMaster Tasks 5.7, 5.8
+**Last Updated:** 2025-12-01

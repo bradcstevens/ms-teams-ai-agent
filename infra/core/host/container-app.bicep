@@ -1,5 +1,4 @@
 // Azure Container App Module
-// Task 1.4: Container Infrastructure Bicep Module
 // Creates Container App with HTTPS ingress and container image configuration
 
 @description('Name of the Container App')
@@ -43,6 +42,68 @@ param memorySize string = '1Gi'
 
 @description('Environment variables for the container')
 param environmentVariables array = []
+
+@description('MCP server configurations (transformed from main.bicep)')
+param mcpServers array = []
+
+// ============================================================================
+// VARIABLES
+// ============================================================================
+
+// Build MCP environment variables from server configurations
+// Format: MCP_SERVER_<index>_NAME, MCP_SERVER_<index>_COMMAND, MCP_SERVER_<index>_ARGS
+// Note: We manually build env vars for each server to avoid nested for-expressions
+var mcpEnvVarsName = [for (server, i) in mcpServers: {
+  name: 'MCP_SERVER_${i}_NAME'
+  value: server.name
+}]
+
+var mcpEnvVarsCommand = [for (server, i) in mcpServers: {
+  name: 'MCP_SERVER_${i}_COMMAND'
+  value: server.command
+}]
+
+var mcpEnvVarsArgs = [for (server, i) in mcpServers: {
+  name: 'MCP_SERVER_${i}_ARGS'
+  value: string(server.args)
+}]
+
+// Build MCP_SERVER_COUNT to indicate how many servers are configured
+var mcpCountEnvVar = empty(mcpServers) ? [] : [
+  {
+    name: 'MCP_SERVER_COUNT'
+    value: string(length(mcpServers))
+  }
+]
+
+// Build environment variable entries for server 0's env settings
+var mcpServer0Env = length(mcpServers) > 0 ? mcpServers[0].env : {}
+var mcpEnvVarsEnv0 = [for envKey in items(mcpServer0Env): {
+  name: 'MCP_SERVER_0_ENV_${envKey.key}'
+  value: string(envKey.value)
+}]
+
+// Build environment variable entries for server 1's env settings
+var mcpServer1Env = length(mcpServers) > 1 ? mcpServers[1].env : {}
+var mcpEnvVarsEnv1 = [for envKey in items(mcpServer1Env): {
+  name: 'MCP_SERVER_1_ENV_${envKey.key}'
+  value: string(envKey.value)
+}]
+
+// Build environment variable entries for server 2's env settings
+var mcpServer2Env = length(mcpServers) > 2 ? mcpServers[2].env : {}
+var mcpEnvVarsEnv2 = [for envKey in items(mcpServer2Env): {
+  name: 'MCP_SERVER_2_ENV_${envKey.key}'
+  value: string(envKey.value)
+}]
+
+// Combine all MCP environment variables (supports up to 3 MCP servers)
+var mcpEnvVarsBase = concat(concat(mcpEnvVarsName, mcpEnvVarsCommand), mcpEnvVarsArgs)
+var mcpEnvVarsWithEnv = concat(concat(concat(mcpEnvVarsBase, mcpEnvVarsEnv0), mcpEnvVarsEnv1), mcpEnvVarsEnv2)
+var mcpEnvVars = concat(mcpCountEnvVar, mcpEnvVarsWithEnv)
+
+// Combine with existing environment variables
+var combinedEnvVars = concat(environmentVariables, mcpEnvVars)
 
 // ============================================================================
 // EXISTING RESOURCES
@@ -102,7 +163,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             cpu: json(cpuCores)
             memory: memorySize
           }
-          env: environmentVariables
+          env: combinedEnvVars
         }
       ]
       scale: {

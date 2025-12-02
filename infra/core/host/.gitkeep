@@ -1,5 +1,5 @@
-# Task 1.3 & 1.4: Container Apps Environment and Container Infrastructure
-# Placeholder directory for:
-# - container-apps-environment.bicep (Task 1.3)
-# - container-registry.bicep (Task 1.4)
-# - container-app.bicep (Task 1.4)
+# Container Apps Environment and Container Infrastructure
+# Contains:
+# - container-apps-environment.bicep
+# - container-registry.bicep
+# - container-app.bicep

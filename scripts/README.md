@@ -51,7 +51,7 @@ This directory contains automation scripts for Azure deployment and configuratio
 - Store Bot ID and Password in Key Vault
 - Configure messaging endpoint
 
-**Status:** 🚧 Placeholder - To be implemented in Task 4.1
+**Status:** 🚧 Planned Enhancement
 
 ---
 
@@ -66,7 +66,7 @@ This directory contains automation scripts for Azure deployment and configuratio
 - Package with app icons
 - Output instructions for Teams upload
 
-**Status:** 🚧 Placeholder - To be implemented in Task 4.2
+**Status:** 🚧 Planned Enhancement
 
 ---
 
@@ -194,8 +194,8 @@ To test hooks without full deployment:
 ## Future Enhancements
 
 Planned improvements for post-MVP:
-- Automated Bot Service registration (Task 4.1)
-- Dynamic Teams manifest generation (Task 4.2)
+- Automated Bot Service registration
+- Dynamic Teams manifest generation
 - Certificate management automation
 - Monitoring dashboard setup
 - Rollback automation
@@ -203,4 +203,4 @@ Planned improvements for post-MVP:
 
 ---
 
-**Last Updated:** 2025-11-12 (Task 1.1)
+**Last Updated:** 2025-12-01

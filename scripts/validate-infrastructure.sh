@@ -1,10 +1,9 @@
 #!/bin/bash
 # Simplified Bicep Infrastructure Validation Test
-# Task 1.2: Core Bicep Infrastructure Module
+# Core Bicep Infrastructure Module
 
 echo "========================================"
 echo "Bicep Infrastructure Validation"
-echo "Task 1.2: Core Bicep Infrastructure Module"
 echo "========================================"
 echo ""
 

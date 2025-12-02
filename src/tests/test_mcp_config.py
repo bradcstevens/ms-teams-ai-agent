@@ -305,10 +305,11 @@ class TestLoadMCPConfig:
             os.unlink(config_path)
             del os.environ["TEST_API_KEY"]
 
-    def test_load_nonexistent_file_raises_error(self):
-        """Test loading nonexistent file raises appropriate error."""
-        with pytest.raises(MCPConfigError, match="Configuration file.*not found"):
-            load_mcp_config("/nonexistent/path/mcp_servers.json")
+    def test_load_nonexistent_file_returns_empty_config(self):
+        """Test loading nonexistent file returns empty config (unless env vars present)."""
+        # With no env vars and no file, should return empty config
+        config = load_mcp_config("/nonexistent/path/mcp_servers.json")
+        assert len(config.mcpServers) == 0
 
     def test_load_invalid_json_raises_error(self):
         """Test loading invalid JSON raises appropriate error."""
@@ -338,7 +339,7 @@ class TestLoadMCPConfig:
             config_path = f.name
 
         try:
-            with pytest.raises(MCPConfigError, match="Configuration validation failed"):
+            with pytest.raises(MCPConfigError, match="JSON configuration validation failed"):
                 load_mcp_config(config_path)
         finally:
             os.unlink(config_path)
@@ -432,3 +433,211 @@ class TestMCPConfigIntegration:
         finally:
             os.unlink(config_path)
             del os.environ["PROD_API_KEY"]
+
+
+class TestEnvironmentVariableParsing:
+    """Test cases for environment variable MCP server configuration."""
+
+    def test_parse_single_server_from_env(self):
+        """Test parsing a single MCP server from environment variables."""
+        from app.mcp.config import parse_env_var_servers
+
+        os.environ["MCP_SERVER_1_NAME"] = "test-server"
+        os.environ["MCP_SERVER_1_COMMAND"] = "npx"
+        os.environ["MCP_SERVER_1_ARGS"] = "-y,test-package"
+        os.environ["MCP_SERVER_1_TRANSPORT"] = "stdio"
+
+        try:
+            servers = parse_env_var_servers()
+
+            assert len(servers) == 1
+            assert "test-server" in servers
+            assert servers["test-server"].command == "npx"
+            assert servers["test-server"].args == ["-y", "test-package"]
+            assert servers["test-server"].transport == TransportType.STDIO
+        finally:
+            del os.environ["MCP_SERVER_1_NAME"]
+            del os.environ["MCP_SERVER_1_COMMAND"]
+            del os.environ["MCP_SERVER_1_ARGS"]
+            del os.environ["MCP_SERVER_1_TRANSPORT"]
+
+    def test_parse_multiple_servers_from_env(self):
+        """Test parsing multiple MCP servers from environment variables."""
+        from app.mcp.config import parse_env_var_servers
+
+        # Server 1
+        os.environ["MCP_SERVER_1_NAME"] = "filesystem"
+        os.environ["MCP_SERVER_1_COMMAND"] = "npx"
+        os.environ["MCP_SERVER_1_ARGS"] = "-y,mcp-server-filesystem"
+
+        # Server 2
+        os.environ["MCP_SERVER_2_NAME"] = "web-search"
+        os.environ["MCP_SERVER_2_COMMAND"] = "python"
+        os.environ["MCP_SERVER_2_ARGS"] = "-m,mcp_server_web_search"
+        os.environ["MCP_SERVER_2_ENABLED"] = "false"
+
+        try:
+            servers = parse_env_var_servers()
+
+            assert len(servers) == 2
+            assert "filesystem" in servers
+            assert "web-search" in servers
+            assert servers["filesystem"].enabled is True
+            assert servers["web-search"].enabled is False
+        finally:
+            for i in [1, 2]:
+                for key in ["NAME", "COMMAND", "ARGS", "ENABLED"]:
+                    env_key = f"MCP_SERVER_{i}_{key}"
+                    if env_key in os.environ:
+                        del os.environ[env_key]
+
+    def test_parse_server_with_env_vars(self):
+        """Test parsing server with environment variables."""
+        from app.mcp.config import parse_env_var_servers
+
+        os.environ["MCP_SERVER_1_NAME"] = "api-server"
+        os.environ["MCP_SERVER_1_COMMAND"] = "python"
+        os.environ["MCP_SERVER_1_ENV_API_KEY"] = "secret123"
+        os.environ["MCP_SERVER_1_ENV_ENDPOINT"] = "https://api.example.com"
+
+        try:
+            servers = parse_env_var_servers()
+
+            assert "api-server" in servers
+            assert "API_KEY" in servers["api-server"].env
+            assert servers["api-server"].env["API_KEY"] == "secret123"
+            assert "ENDPOINT" in servers["api-server"].env
+            assert servers["api-server"].env["ENDPOINT"] == "https://api.example.com"
+        finally:
+            for key in ["NAME", "COMMAND", "ENV_API_KEY", "ENV_ENDPOINT"]:
+                env_key = f"MCP_SERVER_1_{key}"
+                if env_key in os.environ:
+                    del os.environ[env_key]
+
+    def test_parse_with_server_count_hint(self):
+        """Test parsing with MCP_SERVER_COUNT optimization hint."""
+        from app.mcp.config import parse_env_var_servers
+
+        os.environ["MCP_SERVER_COUNT"] = "2"
+        os.environ["MCP_SERVER_1_NAME"] = "server1"
+        os.environ["MCP_SERVER_1_COMMAND"] = "npx"
+        os.environ["MCP_SERVER_2_NAME"] = "server2"
+        os.environ["MCP_SERVER_2_COMMAND"] = "python"
+
+        try:
+            servers = parse_env_var_servers()
+
+            assert len(servers) == 2
+        finally:
+            del os.environ["MCP_SERVER_COUNT"]
+            for i in [1, 2]:
+                del os.environ[f"MCP_SERVER_{i}_NAME"]
+                del os.environ[f"MCP_SERVER_{i}_COMMAND"]
+
+    def test_parse_empty_env_returns_empty_dict(self):
+        """Test that parsing with no env vars returns empty dict."""
+        from app.mcp.config import parse_env_var_servers
+
+        servers = parse_env_var_servers()
+
+        assert servers == {}
+
+    def test_parse_server_with_description(self):
+        """Test parsing server with description field."""
+        from app.mcp.config import parse_env_var_servers
+
+        os.environ["MCP_SERVER_1_NAME"] = "test-server"
+        os.environ["MCP_SERVER_1_COMMAND"] = "npx"
+        os.environ["MCP_SERVER_1_DESCRIPTION"] = "Test MCP server for integration"
+
+        try:
+            servers = parse_env_var_servers()
+
+            assert servers["test-server"].description == "Test MCP server for integration"
+        finally:
+            for key in ["NAME", "COMMAND", "DESCRIPTION"]:
+                del os.environ[f"MCP_SERVER_1_{key}"]
+
+
+class TestConfigurationMerging:
+    """Test cases for merging JSON and environment variable configurations."""
+
+    def test_env_vars_override_json_config(self):
+        """Test that environment variables override JSON configuration for same-named servers."""
+        config_data = {
+            "mcpServers": {
+                "test-server": {
+                    "command": "old-command",
+                    "args": ["old-arg"],
+                    "enabled": False,
+                }
+            }
+        }
+
+        # Set environment variable to override
+        os.environ["MCP_SERVER_1_NAME"] = "test-server"
+        os.environ["MCP_SERVER_1_COMMAND"] = "new-command"
+        os.environ["MCP_SERVER_1_ARGS"] = "new-arg"
+        os.environ["MCP_SERVER_1_ENABLED"] = "true"
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(config_data, f)
+            config_path = f.name
+
+        try:
+            config = load_mcp_config(config_path)
+
+            # Environment variable should override JSON
+            assert config.mcpServers["test-server"].command == "new-command"
+            assert config.mcpServers["test-server"].args == ["new-arg"]
+            assert config.mcpServers["test-server"].enabled is True
+        finally:
+            os.unlink(config_path)
+            for key in ["NAME", "COMMAND", "ARGS", "ENABLED"]:
+                del os.environ[f"MCP_SERVER_1_{key}"]
+
+    def test_merge_json_and_env_servers(self):
+        """Test merging servers from both JSON and environment variables."""
+        config_data = {
+            "mcpServers": {
+                "json-server": {
+                    "command": "json-command",
+                }
+            }
+        }
+
+        os.environ["MCP_SERVER_1_NAME"] = "env-server"
+        os.environ["MCP_SERVER_1_COMMAND"] = "env-command"
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(config_data, f)
+            config_path = f.name
+
+        try:
+            config = load_mcp_config(config_path)
+
+            # Both servers should be present
+            assert len(config.mcpServers) == 2
+            assert "json-server" in config.mcpServers
+            assert "env-server" in config.mcpServers
+            assert config.mcpServers["json-server"].command == "json-command"
+            assert config.mcpServers["env-server"].command == "env-command"
+        finally:
+            os.unlink(config_path)
+            del os.environ["MCP_SERVER_1_NAME"]
+            del os.environ["MCP_SERVER_1_COMMAND"]
+
+    def test_load_env_only_when_no_json_file(self):
+        """Test loading from environment variables when JSON file doesn't exist."""
+        os.environ["MCP_SERVER_1_NAME"] = "env-only-server"
+        os.environ["MCP_SERVER_1_COMMAND"] = "npx"
+
+        try:
+            # Should not raise error when file doesn't exist but env vars present
+            config = load_mcp_config("/nonexistent/path.json")
+
+            assert len(config.mcpServers) == 1
+            assert "env-only-server" in config.mcpServers
+        finally:
+            del os.environ["MCP_SERVER_1_NAME"]
+            del os.environ["MCP_SERVER_1_COMMAND"]

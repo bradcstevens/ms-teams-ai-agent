@@ -5,7 +5,7 @@ An AI agent for Microsoft Teams, built with Azure Container Apps, Azure OpenAI, 
 ## Features
 
 - One-command deployment with `azd up` (target: <15 minutes)
-- Azure OpenAI integration with GPT-4
+- Azure OpenAI integration with GPT-4o
 - Microsoft Teams bot integration
 - Model Context Protocol (MCP) server support
 - Application Insights monitoring
@@ -83,8 +83,7 @@ This will:
 Then upload the generated `teams-app-<env>-1.0.0.zip` to Teams Admin Center.
 
 **Detailed documentation:**
-- [Teams Deployment Guide](docs/TEAMS_DEPLOYMENT.md)
-- [Testing & Troubleshooting](docs/TEAMS_TESTING.md)
+- [Teams Guide](docs/TEAMS_GUIDE.md) - Complete deployment, testing, and troubleshooting
 
 ## Project Structure
 
@@ -117,7 +116,7 @@ Then upload the generated `teams-app-<env>-1.0.0.zip` to Teams Admin Center.
 
 ### Local Testing
 ```bash
-# Run application locally (after Phase 2 implementation)
+# Run application locally
 python src/app/main.py
 
 # Test with Bot Framework Emulator
@@ -152,7 +151,7 @@ The following environment variables are automatically configured during deployme
 | Variable | Description | Source |
 |----------|-------------|--------|
 | `AZURE_OPENAI_ENDPOINT` | Azure OpenAI service endpoint | Bicep output |
-| `AZURE_OPENAI_DEPLOYMENT_NAME` | GPT-4 model deployment name | Bicep output |
+| `AZURE_OPENAI_DEPLOYMENT_NAME` | GPT-4o model deployment name | Bicep output |
 | `BOT_ID` | Azure Bot Service application ID | Bot registration |
 | `BOT_PASSWORD` | Bot application password | Key Vault |
 | `BOT_TENANT_ID` | Azure AD tenant ID | Bicep output |
@@ -164,7 +163,7 @@ The following environment variables are automatically configured during deployme
 ### Azure Resources
 
 - **Azure Container Apps**: Serverless container hosting
-- **Azure OpenAI Service**: GPT-4 model deployment
+- **Azure OpenAI Service**: GPT-4o model deployment
 - **Azure Bot Service**: Teams integration
 - **Azure Container Registry**: Container image storage
 - **Azure Key Vault**: Secrets management
@@ -191,99 +190,12 @@ See [scripts/README.md](scripts/README.md) for detailed hook documentation.
 
 ## Documentation
 
-- [Scripts Documentation](scripts/README.md) - Automation scripts and hooks
-- [Infrastructure Guide](infra/README.md) - Bicep templates and Azure resources (Task 1.2+)
-- [Application Guide](src/README.md) - Python application architecture (Phase 2+)
-- [MCP Integration](docs/mcp-integration.md) - Model Context Protocol setup (Phase 3+)
-- [Teams Deployment](docs/teams-deployment.md) - Teams configuration guide (Phase 4+)
-
-## Project Status
-
-**Last Updated**: 2025-11-13
-
-### Project Completion: 60% (3/5 Phases Complete)
-
-This project is under active development following a phased approach with multi-agent collective workflow:
-
-#### Phase 1: Infrastructure Foundation - COMPLETE
-**Status**: Production-ready | **All 7 subtasks completed**
-
-- Azure Bicep infrastructure deployed
-- Core modules: Container Apps, OpenAI, Bot Service, Key Vault, Monitoring
-- All validation tests passing
-- Infrastructure fully documented and validated
-
-**Key Deliverables**:
-- `infra/main.bicep` - Main orchestration template
-- `infra/ai/openai.bicep` - Azure OpenAI configuration
-- `infra/bot/bot-service.bicep` - Teams bot setup
-- `infra/core/host/*.bicep` - Container Apps infrastructure
-- `infra/security/key-vault.bicep` - Secrets management
-
-#### Phase 2: Agent Implementation - COMPLETE
-**Status**: Production-ready | **All 8 subtasks completed**
-
-- Teams AI agent with FastAPI implementation
-- Microsoft Agent Framework integration
-- Bot Framework SDK implementation
-- All core functionality implemented
-
-**Key Deliverables**:
-- `src/app/` - Python application with FastAPI
-- `src/requirements.txt` - Production dependencies
-- `src/Dockerfile` - Container image definition
-
-#### Phase 3: MCP Integration - COMPLETE
-**Status**: Production-ready | **All 7 subtasks completed**
-
-- Model Context Protocol integration
-- **98/98 tests passing (100% pass rate)**
-- Quality gates: mypy 0 errors, ruff 0 warnings
-- 2,009 lines of production code
-
-**Key Deliverables**:
-- Configuration management system
-- Client/Manager implementation
-- Discovery/Registry system
-- Server integrations (OpenAI, Perplexity, Anthropic)
-- Bridge layer for agent communication
-- Comprehensive error handling
-- Full test coverage
-
-#### Phase 4: Teams Deployment - UNDER VALIDATION
-**Status**: Requires verification | **6 subtasks pending validation**
-
-- TaskMaster shows "done" but subtasks show "pending"
-- Requires validation before confirming completion
-- Deployment automation being verified
-
-**Planned Deliverables**:
-- Teams app manifest generation
-- Bot registration automation
-- End-to-end deployment scripts
-
-#### Phase 5: Validation & Documentation - PENDING
-**Status**: Blocked | **Awaiting Phase 4 completion**
-
-- Status: pending
-- Not yet started
-- Comprehensive testing and documentation phase
-
-### Quality Metrics
-
-- **Test Coverage**: 98/98 passing for MCP integration (Phase 3)
-- **Type Safety**: 100% (mypy strict mode)
-- **Code Quality**: 100% (ruff compliance)
-- **Total Implementation**: 2,000+ lines of production code
-- **Infrastructure**: 100% Bicep validation passing
-
-### Development Approach
-
-This project uses a **multi-agent collective workflow** with TaskMaster AI:
-- Research agents for technical investigation
-- Implementation agents for code development
-- Validation agents for quality assurance
-- See `.taskmaster/tasks/` for detailed task tracking
+- [Developer Guide](docs/DEVELOPER_GUIDE.md) - Local setup, workflow, and API reference
+- [Architecture](docs/ARCHITECTURE.md) - System design and components
+- [Operations Guide](docs/OPERATIONS.md) - Monitoring, maintenance, and troubleshooting
+- [MCP Integration](docs/MCP_INTEGRATION.md) - Model Context Protocol setup
+- [Teams Guide](docs/TEAMS_GUIDE.md) - Teams deployment and testing
+- [Infrastructure Guide](infra/README.md) - Bicep templates and Azure resources
 
 ## Testing
 
@@ -298,13 +210,13 @@ This project uses a **multi-agent collective workflow** with TaskMaster AI:
 
 ### Infrastructure Testing
 ```bash
-# Validate Bicep templates (Task 1.2+)
+# Validate Bicep templates
 az bicep build --file infra/main.bicep
 ```
 
 ### Application Testing
 ```bash
-# Run unit tests (Phase 2+)
+# Run unit tests
 pytest tests/
 
 # Run integration tests with Bot Framework Emulator

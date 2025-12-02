@@ -1,5 +1,5 @@
 """
-Bot Framework Authentication & Security Module (Task 4.4)
+Bot Framework Authentication & Security Module
 Implements JWT token validation and Microsoft tenant verification
 """
 import jwt

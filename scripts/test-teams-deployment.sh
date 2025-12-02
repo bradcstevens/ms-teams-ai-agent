@@ -1,5 +1,5 @@
 #!/bin/bash
-# End-to-End Teams Deployment Testing Script (Task 4.6)
+# End-to-End Teams Deployment Testing Script
 # Validates bot registration, endpoint accessibility, and Teams app configuration
 
 set -euo pipefail

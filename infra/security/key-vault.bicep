@@ -1,5 +1,4 @@
 // Azure Key Vault Module
-// Task 1.6: Bot Service & Security Bicep Module
 // Creates Key Vault for secure secrets storage with RBAC assignments
 
 @description('Name of the Azure Key Vault')

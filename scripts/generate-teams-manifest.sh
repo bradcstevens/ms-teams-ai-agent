@@ -1,5 +1,5 @@
 #!/bin/bash
-# Teams App Manifest Generation Script (Task 4.2)
+# Teams App Manifest Generation Script
 # Generates Teams app manifest with dynamic environment-specific values
 
 set -euo pipefail

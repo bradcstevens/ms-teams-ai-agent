@@ -1,6 +1,5 @@
 // Container Apps Environment Module
-// Task 1.3: Networking & Environment Bicep Module
-// Provides serverless container hosting environment with public ingress (VNet deferred to post-MVP)
+// Provides serverless container hosting environment with public ingress
 
 @description('Name of the Container Apps Environment')
 @minLength(2)

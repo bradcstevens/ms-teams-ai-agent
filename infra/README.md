@@ -7,7 +7,7 @@ Azure Infrastructure as Code (IaC) for the Azure AI Agent Framework for Microsof
 This directory contains Bicep templates that define all Azure infrastructure required for the AI agent framework:
 
 - **Azure Container Apps**: Serverless container hosting for the FastAPI bot application
-- **Azure OpenAI Service**: GPT-4 model deployment for AI capabilities
+- **Azure OpenAI Service**: GPT-5 model deployment for AI capabilities
 - **Azure Bot Service**: Microsoft Teams integration and bot registration
 - **Azure Container Registry**: Container image storage and management
 - **Azure Key Vault**: Secure secrets and configuration management
@@ -26,47 +26,47 @@ The main template uses **subscription-level** deployment (`targetScope = 'subscr
 
 ```
 Resource Group (rg)
-├── Log Analytics Workspace (Task 1.3)
-├── Application Insights (Task 1.3)
+├── Log Analytics Workspace
+├── Application Insights
 │   └── depends on: Log Analytics
-├── Container Apps Environment (Task 1.3)
+├── Container Apps Environment
 │   └── depends on: Log Analytics
-├── Container Registry (Task 1.4)
-├── Container App (Task 1.4)
+├── Container Registry
+├── Container App
 │   └── depends on: Container Apps Environment, Container Registry
-├── Azure OpenAI (Task 1.5)
-├── Bot Service (Task 1.6)
+├── Azure OpenAI
+├── Bot Service
 │   └── depends on: Container App (for endpoint URL)
-└── Key Vault (Task 1.6)
+└── Key Vault
 ```
 
 ## File Structure
 
 ```
 infra/
-├── main.bicep                  # Main orchestration template (Task 1.2) ✅
-├── main.parameters.json        # Parameter file template (Task 1.2) ✅
-├── abbreviations.json          # Resource naming reference (Task 1.2) ✅
-├── validate-bicep.sh           # Bicep validation test script (Task 1.2) ✅
-├── README.md                   # This file (Task 1.2) ✅
+├── main.bicep                  # Main orchestration template
+├── main.parameters.json        # Parameter file template
+├── abbreviations.json          # Resource naming reference
+├── validate-bicep.sh           # Bicep validation test script
+├── README.md                   # This file
 │
 ├── core/                       # Core infrastructure modules
 │   ├── host/
-│   │   ├── container-apps-environment.bicep  # Task 1.3 ✅
-│   │   ├── container-registry.bicep          # Task 1.4 ✅
-│   │   └── container-app.bicep               # Task 1.4 ✅
+│   │   ├── container-apps-environment.bicep  # Container Apps Environment
+│   │   ├── container-registry.bicep          # Azure Container Registry
+│   │   └── container-app.bicep               # Container App definition
 │   └── monitor/
-│       ├── loganalytics.bicep                # Task 1.3 ✅
-│       └── applicationinsights.bicep         # Task 1.3 ✅
+│       ├── loganalytics.bicep                # Log Analytics Workspace
+│       └── applicationinsights.bicep         # Application Insights
 │
 ├── ai/
-│   └── openai.bicep                          # Task 1.5 ✅
+│   └── openai.bicep                          # Azure OpenAI Service
 │
 ├── bot/
-│   └── bot-service.bicep                     # Task 1.6 ✅
+│   └── bot-service.bicep                     # Azure Bot Service
 │
 └── security/
-    └── key-vault.bicep                       # Task 1.6 ✅
+    └── key-vault.bicep                       # Azure Key Vault
 ```
 
 ## Parameters
@@ -87,6 +87,103 @@ infra/
 | `openAiModelName` | string | OpenAI model name | 'gpt-4' |
 | `openAiModelVersion` | string | Model version | '0613' |
 | `botDisplayName` | string | Teams bot display name | 'AI Agent for Teams' |
+| `mcpServers` | array | MCP server configurations | [] (empty array) |
+
+### MCP Server Configuration
+
+The `mcpServers` parameter allows you to configure Model Context Protocol (MCP) servers that will be available to the AI agent. Each server configuration is transformed into environment variables that the container app can read.
+
+**Note**: Due to Bicep language limitations with nested for-expressions, the current implementation supports up to 3 MCP servers. To add more servers, extend the `container-app.bicep` module with additional environment variable builders (e.g., `mcpEnvVarsEnv3`, `mcpEnvVarsEnv4`).
+
+#### MCP Server Schema
+
+Each MCP server object in the array should have the following structure:
+
+```json
+{
+  "name": "server-name",          // Required: Unique identifier for the server
+  "command": "command-to-run",    // Required: Command to start the MCP server
+  "args": ["arg1", "arg2"],       // Optional: Command arguments (array of strings)
+  "env": {                        // Optional: Environment variables for the server
+    "API_KEY": "value",           // Regular environment variable
+    "SECRET_KEY": {               // Key Vault secret reference
+      "secretRef": "secret-name"
+    }
+  }
+}
+```
+
+#### Environment Variable Mapping
+
+The Bicep template transforms each MCP server configuration into environment variables:
+
+- `MCP_SERVER_<index>_NAME`: Server name (e.g., `MCP_SERVER_0_NAME=brave-search`)
+- `MCP_SERVER_<index>_COMMAND`: Server command (e.g., `MCP_SERVER_0_COMMAND=npx`)
+- `MCP_SERVER_<index>_ARGS`: JSON array of arguments (e.g., `MCP_SERVER_0_ARGS=["arg1","arg2"]`)
+- `MCP_SERVER_<index>_ENV_<KEY>`: Each environment variable (e.g., `MCP_SERVER_0_ENV_BRAVE_API_KEY`)
+
+#### Example Configuration
+
+**Brave Search MCP Server**:
+```json
+{
+  "name": "brave-search",
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+  "env": {
+    "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+  }
+}
+```
+
+This creates environment variables:
+- `MCP_SERVER_0_NAME=brave-search`
+- `MCP_SERVER_0_COMMAND=npx`
+- `MCP_SERVER_0_ARGS=["-y","@modelcontextprotocol/server-brave-search"]`
+- `MCP_SERVER_0_ENV_BRAVE_API_KEY=<value from BRAVE_API_KEY env var>`
+
+**Multiple MCP Servers**:
+```json
+{
+  "mcpServers": [
+    {
+      "name": "brave-search",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      }
+    },
+    {
+      "name": "filesystem",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
+      "env": {
+        "ALLOWED_DIRECTORIES": "/data"
+      }
+    }
+  ]
+}
+```
+
+#### Key Vault Integration for Secrets
+
+For sensitive credentials (API keys, tokens), use Key Vault secret references:
+
+```json
+{
+  "env": {
+    "API_KEY": {
+      "secretRef": "brave-api-key"  // References a secret stored in Key Vault
+    }
+  }
+}
+```
+
+**Steps to use Key Vault secrets**:
+1. Store secret in Key Vault: `az keyvault secret set --vault-name <vault> --name brave-api-key --value <key>`
+2. Add secret reference to MCP server env configuration
+3. The container app will automatically resolve the secret at runtime
 
 ### Parameter File Usage
 
@@ -174,7 +271,7 @@ The main template exposes outputs that map directly to environment variables in 
 | Output | Description | Environment Variable |
 |--------|-------------|---------------------|
 | `AZURE_OPENAI_ENDPOINT` | OpenAI service URL | `AZURE_OPENAI_ENDPOINT` |
-| `AZURE_OPENAI_DEPLOYMENT_NAME` | GPT-4 deployment name | `AZURE_OPENAI_DEPLOYMENT_NAME` |
+| `AZURE_OPENAI_DEPLOYMENT_NAME` | GPT-5 deployment name | `AZURE_OPENAI_DEPLOYMENT_NAME` |
 | `BOT_ID` | Bot Service app ID | `BOT_ID` |
 | `KEY_VAULT_NAME` | Key Vault name | `KEY_VAULT_NAME` |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Insights connection | `APPLICATIONINSIGHTS_CONNECTION_STRING` |
@@ -245,6 +342,38 @@ azd provision
 azd env get-values
 ```
 
+### Deploying with MCP Servers
+
+To deploy the infrastructure with MCP server support:
+
+**1. Set environment variables for MCP server credentials**:
+```bash
+export BRAVE_API_KEY="your-brave-api-key"
+```
+
+**2. Configure MCP servers in main.parameters.json**:
+The example configuration includes a Brave Search MCP server. Modify or add servers as needed.
+
+**3. Deploy with azd**:
+```bash
+azd up
+```
+
+The deployment will:
+- Transform MCP server configurations into environment variables
+- Inject environment variables into the Container App
+- Resolve any Key Vault secret references at runtime
+
+**4. Verify MCP environment variables** (after deployment):
+```bash
+# Get container app name
+CONTAINER_APP_NAME=$(azd env get-values | grep CONTAINER_APP_NAME | cut -d'=' -f2)
+
+# List environment variables
+az containerapp show --name $CONTAINER_APP_NAME --resource-group <resource-group> \
+  --query properties.template.containers[0].env
+```
+
 ### Using Azure CLI Directly
 
 ```bash
@@ -260,7 +389,7 @@ az deployment sub show \
   --query properties.outputs
 ```
 
-## Task 1.3: Networking & Environment Modules (COMPLETED)
+## Networking & Environment Modules
 
 ### Log Analytics Workspace (loganalytics.bicep)
 
@@ -375,21 +504,21 @@ Tests cover:
 - Main template integration
 - API version compliance
 
-## Module Implementation Status
+## Module Reference
 
-| Task | Module | Status | Description |
-|------|--------|--------|-------------|
-| 1.2 | main.bicep | ✅ Complete | Main orchestration template |
-| 1.3 | loganalytics.bicep | ✅ Complete | Log Analytics Workspace |
-| 1.3 | applicationinsights.bicep | ✅ Complete | Application Insights |
-| 1.3 | container-apps-environment.bicep | ✅ Complete | Container Apps Environment |
-| 1.4 | container-registry.bicep | ✅ Complete | Azure Container Registry |
-| 1.4 | container-app.bicep | ✅ Complete | Container App definition |
-| 1.5 | openai.bicep | ✅ Complete | Azure OpenAI Service |
-| 1.6 | bot-service.bicep | ✅ Complete | Azure Bot Service |
-| 1.6 | key-vault.bicep | ✅ Complete | Azure Key Vault |
-| 1.7 | validate-structure.sh | ✅ Complete | Structure validation script |
-| 1.7 | validate-bicep.sh | ✅ Complete | Bicep compilation validation |
+| Module | Description |
+|--------|-------------|
+| main.bicep | Main orchestration template |
+| loganalytics.bicep | Log Analytics Workspace |
+| applicationinsights.bicep | Application Insights |
+| container-apps-environment.bicep | Container Apps Environment |
+| container-registry.bicep | Azure Container Registry |
+| container-app.bicep | Container App definition |
+| openai.bicep | Azure OpenAI Service |
+| bot-service.bicep | Azure Bot Service |
+| key-vault.bicep | Azure Key Vault |
+| validate-structure.sh | Structure validation script |
+| validate-bicep.sh | Bicep compilation validation |
 
 ## Best Practices
 
@@ -505,14 +634,3 @@ Cost optimization strategies:
 - [Azure OpenAI Service Documentation](https://learn.microsoft.com/azure/ai-services/openai/)
 - [Azure Bot Service Documentation](https://learn.microsoft.com/azure/bot-service/)
 - [Azure Naming Conventions](https://learn.microsoft.com/azure/cloud-adoption-framework/ready/azure-best-practices/resource-naming)
-
-## Next Steps
-
-After completing Task 1.2, proceed to:
-1. **Task 1.3**: Implement Networking & Environment module
-2. **Task 1.4**: Implement Container Infrastructure module
-3. **Task 1.5**: Implement AI Services module
-4. **Task 1.6**: Implement Bot Service & Security module
-5. **Task 1.7**: Implement Monitoring & Validation
-
-Each module will uncomment its corresponding section in `main.bicep` and provide real outputs to replace placeholders.

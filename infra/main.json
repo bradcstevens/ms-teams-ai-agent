@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.3.11034",
-      "templateHash": "16204211994763958087"
+      "templateHash": "10220996824613020606"
     }
   },
   "parameters": {
@@ -30,6 +30,18 @@
       "defaultValue": "",
       "metadata": {
         "description": "Service principal ID for RBAC assignments (leave empty for interactive deployments)"
+      }
+    },
+    "principalType": {
+      "type": "string",
+      "defaultValue": "User",
+      "allowedValues": [
+        "User",
+        "Group",
+        "ServicePrincipal"
+      ],
+      "metadata": {
+        "description": "Principal type for RBAC role assignments"
       }
     },
     "openAiLocation": {
@@ -56,14 +68,14 @@
     },
     "openAiModelName": {
       "type": "string",
-      "defaultValue": "gpt-4",
+      "defaultValue": "gpt-4o",
       "metadata": {
         "description": "Azure OpenAI model name for deployment"
       }
     },
     "openAiModelVersion": {
       "type": "string",
-      "defaultValue": "0613",
+      "defaultValue": "2024-08-06",
       "metadata": {
         "description": "Azure OpenAI model version"
       }
@@ -77,15 +89,48 @@
         "description": "Display name for the Teams bot"
       }
     },
+    "botAppId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Bot App Registration ID (leave empty to skip bot service deployment)"
+      }
+    },
+    "botTenantId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Bot App Tenant ID for SingleTenant auth"
+      }
+    },
     "deploymentTimestamp": {
       "type": "string",
       "defaultValue": "[utcNow()]",
       "metadata": {
         "description": "Current timestamp for deployment tracking"
       }
+    },
+    "mcpServers": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "MCP server configurations as JSON array (optional)"
+      }
     }
   },
   "variables": {
+    "copy": [
+      {
+        "name": "mcpEnvironmentVariables",
+        "count": "[length(parameters('mcpServers'))]",
+        "input": {
+          "name": "[if(contains(parameters('mcpServers')[copyIndex('mcpEnvironmentVariables')], 'name'), parameters('mcpServers')[copyIndex('mcpEnvironmentVariables')].name, 'unnamed-server')]",
+          "command": "[if(contains(parameters('mcpServers')[copyIndex('mcpEnvironmentVariables')], 'command'), parameters('mcpServers')[copyIndex('mcpEnvironmentVariables')].command, '')]",
+          "args": "[if(contains(parameters('mcpServers')[copyIndex('mcpEnvironmentVariables')], 'args'), parameters('mcpServers')[copyIndex('mcpEnvironmentVariables')].args, createArray())]",
+          "env": "[if(contains(parameters('mcpServers')[copyIndex('mcpEnvironmentVariables')], 'env'), parameters('mcpServers')[copyIndex('mcpEnvironmentVariables')].env, createObject())]"
+        }
+      }
+    ],
     "abbrs": {
       "resourceGroup": "rg",
       "containerAppsEnvironment": "cae",
@@ -562,6 +607,1074 @@
         "logAnalytics",
         "rg"
       ]
+    },
+    "containerRegistry": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('registry-{0}', variables('resourceToken'))]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "containerRegistryName": {
+            "value": "[format('{0}{1}{2}', variables('abbrs').containerRegistry, replace(parameters('environmentName'), '-', ''), variables('resourceToken'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.3.11034",
+              "templateHash": "2026947174579795702"
+            }
+          },
+          "parameters": {
+            "containerRegistryName": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 50,
+              "metadata": {
+                "description": "Name of the Azure Container Registry (alphanumeric only, globally unique)"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Azure region for the container registry"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags for organization and cost tracking"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "Basic",
+              "allowedValues": [
+                "Basic",
+                "Standard",
+                "Premium"
+              ],
+              "metadata": {
+                "description": "Container Registry SKU"
+              }
+            },
+            "adminUserEnabled": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable admin user for registry authentication"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ContainerRegistry/registries",
+              "apiVersion": "2023-07-01",
+              "name": "[parameters('containerRegistryName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]"
+              },
+              "properties": {
+                "adminUserEnabled": "[parameters('adminUserEnabled')]",
+                "publicNetworkAccess": "Enabled"
+              }
+            }
+          ],
+          "outputs": {
+            "containerRegistryId": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Registry resource ID"
+              },
+              "value": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('containerRegistryName'))]"
+            },
+            "containerRegistryName": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Registry name"
+              },
+              "value": "[parameters('containerRegistryName')]"
+            },
+            "loginServer": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Registry login server URL"
+              },
+              "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', parameters('containerRegistryName')), '2023-07-01').loginServer]"
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Registry resource name for module references"
+              },
+              "value": "[parameters('containerRegistryName')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "rg"
+      ]
+    },
+    "containerApp": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('container-app-{0}', variables('resourceToken'))]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "containerAppName": {
+            "value": "[format('{0}-{1}-{2}', variables('abbrs').containerApps, parameters('environmentName'), variables('resourceToken'))]"
+          },
+          "containerAppsEnvironmentId": {
+            "value": "[reference('containerAppsEnvironment').outputs.id.value]"
+          },
+          "containerRegistryName": {
+            "value": "[reference('containerRegistry').outputs.containerRegistryName.value]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[union(variables('tags'), createObject('azd-service-name', 'api'))]"
+          },
+          "targetPort": {
+            "value": 8000
+          },
+          "mcpServers": {
+            "value": "[variables('mcpEnvironmentVariables')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.3.11034",
+              "templateHash": "5063513524415535484"
+            }
+          },
+          "parameters": {
+            "containerAppName": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 32,
+              "metadata": {
+                "description": "Name of the Container App"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Azure region for the container app"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags for organization and cost tracking"
+              }
+            },
+            "containerAppsEnvironmentId": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Apps Environment resource ID"
+              }
+            },
+            "containerRegistryName": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Registry name for image pulling"
+              }
+            },
+            "containerImage": {
+              "type": "string",
+              "defaultValue": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+              "metadata": {
+                "description": "Container image name (with tag)"
+              }
+            },
+            "targetPort": {
+              "type": "int",
+              "defaultValue": 3978,
+              "metadata": {
+                "description": "Target port for container ingress"
+              }
+            },
+            "minReplicas": {
+              "type": "int",
+              "defaultValue": 1,
+              "minValue": 0,
+              "maxValue": 30,
+              "metadata": {
+                "description": "Minimum number of replicas"
+              }
+            },
+            "maxReplicas": {
+              "type": "int",
+              "defaultValue": 3,
+              "minValue": 1,
+              "maxValue": 30,
+              "metadata": {
+                "description": "Maximum number of replicas"
+              }
+            },
+            "cpuCores": {
+              "type": "string",
+              "defaultValue": "0.5",
+              "metadata": {
+                "description": "CPU cores allocated to container"
+              }
+            },
+            "memorySize": {
+              "type": "string",
+              "defaultValue": "1Gi",
+              "metadata": {
+                "description": "Memory allocated to container"
+              }
+            },
+            "environmentVariables": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Environment variables for the container"
+              }
+            },
+            "mcpServers": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "MCP server configurations (transformed from main.bicep)"
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "mcpEnvVarsName",
+                "count": "[length(parameters('mcpServers'))]",
+                "input": {
+                  "name": "[format('MCP_SERVER_{0}_NAME', copyIndex('mcpEnvVarsName'))]",
+                  "value": "[parameters('mcpServers')[copyIndex('mcpEnvVarsName')].name]"
+                }
+              },
+              {
+                "name": "mcpEnvVarsCommand",
+                "count": "[length(parameters('mcpServers'))]",
+                "input": {
+                  "name": "[format('MCP_SERVER_{0}_COMMAND', copyIndex('mcpEnvVarsCommand'))]",
+                  "value": "[parameters('mcpServers')[copyIndex('mcpEnvVarsCommand')].command]"
+                }
+              },
+              {
+                "name": "mcpEnvVarsArgs",
+                "count": "[length(parameters('mcpServers'))]",
+                "input": {
+                  "name": "[format('MCP_SERVER_{0}_ARGS', copyIndex('mcpEnvVarsArgs'))]",
+                  "value": "[string(parameters('mcpServers')[copyIndex('mcpEnvVarsArgs')].args)]"
+                }
+              },
+              {
+                "name": "mcpEnvVarsEnv0",
+                "count": "[length(items(variables('mcpServer0Env')))]",
+                "input": {
+                  "name": "[format('MCP_SERVER_0_ENV_{0}', items(variables('mcpServer0Env'))[copyIndex('mcpEnvVarsEnv0')].key)]",
+                  "value": "[string(items(variables('mcpServer0Env'))[copyIndex('mcpEnvVarsEnv0')].value)]"
+                }
+              },
+              {
+                "name": "mcpEnvVarsEnv1",
+                "count": "[length(items(variables('mcpServer1Env')))]",
+                "input": {
+                  "name": "[format('MCP_SERVER_1_ENV_{0}', items(variables('mcpServer1Env'))[copyIndex('mcpEnvVarsEnv1')].key)]",
+                  "value": "[string(items(variables('mcpServer1Env'))[copyIndex('mcpEnvVarsEnv1')].value)]"
+                }
+              },
+              {
+                "name": "mcpEnvVarsEnv2",
+                "count": "[length(items(variables('mcpServer2Env')))]",
+                "input": {
+                  "name": "[format('MCP_SERVER_2_ENV_{0}', items(variables('mcpServer2Env'))[copyIndex('mcpEnvVarsEnv2')].key)]",
+                  "value": "[string(items(variables('mcpServer2Env'))[copyIndex('mcpEnvVarsEnv2')].value)]"
+                }
+              }
+            ],
+            "mcpCountEnvVar": "[if(empty(parameters('mcpServers')), createArray(), createArray(createObject('name', 'MCP_SERVER_COUNT', 'value', string(length(parameters('mcpServers'))))))]",
+            "mcpServer0Env": "[if(greater(length(parameters('mcpServers')), 0), parameters('mcpServers')[0].env, createObject())]",
+            "mcpServer1Env": "[if(greater(length(parameters('mcpServers')), 1), parameters('mcpServers')[1].env, createObject())]",
+            "mcpServer2Env": "[if(greater(length(parameters('mcpServers')), 2), parameters('mcpServers')[2].env, createObject())]",
+            "mcpEnvVarsBase": "[concat(concat(variables('mcpEnvVarsName'), variables('mcpEnvVarsCommand')), variables('mcpEnvVarsArgs'))]",
+            "mcpEnvVarsWithEnv": "[concat(concat(concat(variables('mcpEnvVarsBase'), variables('mcpEnvVarsEnv0')), variables('mcpEnvVarsEnv1')), variables('mcpEnvVarsEnv2'))]",
+            "mcpEnvVars": "[concat(variables('mcpCountEnvVar'), variables('mcpEnvVarsWithEnv'))]",
+            "combinedEnvVars": "[concat(parameters('environmentVariables'), variables('mcpEnvVars'))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/containerApps",
+              "apiVersion": "2024-03-01",
+              "name": "[parameters('containerAppName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "managedEnvironmentId": "[parameters('containerAppsEnvironmentId')]",
+                "configuration": {
+                  "ingress": {
+                    "external": true,
+                    "targetPort": "[parameters('targetPort')]",
+                    "transport": "auto",
+                    "allowInsecure": false,
+                    "traffic": [
+                      {
+                        "latestRevision": true,
+                        "weight": 100
+                      }
+                    ]
+                  },
+                  "registries": [
+                    {
+                      "server": "[reference(resourceId('Microsoft.ContainerRegistry/registries', parameters('containerRegistryName')), '2023-07-01').loginServer]",
+                      "username": "[listCredentials(resourceId('Microsoft.ContainerRegistry/registries', parameters('containerRegistryName')), '2023-07-01').username]",
+                      "passwordSecretRef": "registry-password"
+                    }
+                  ],
+                  "secrets": [
+                    {
+                      "name": "registry-password",
+                      "value": "[listCredentials(resourceId('Microsoft.ContainerRegistry/registries', parameters('containerRegistryName')), '2023-07-01').passwords[0].value]"
+                    }
+                  ]
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "[parameters('containerAppName')]",
+                      "image": "[parameters('containerImage')]",
+                      "resources": {
+                        "cpu": "[json(parameters('cpuCores'))]",
+                        "memory": "[parameters('memorySize')]"
+                      },
+                      "env": "[variables('combinedEnvVars')]"
+                    }
+                  ],
+                  "scale": {
+                    "minReplicas": "[parameters('minReplicas')]",
+                    "maxReplicas": "[parameters('maxReplicas')]",
+                    "rules": [
+                      {
+                        "name": "http-scaling",
+                        "http": {
+                          "metadata": {
+                            "concurrentRequests": "10"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "containerAppId": {
+              "type": "string",
+              "metadata": {
+                "description": "Container App resource ID"
+              },
+              "value": "[resourceId('Microsoft.App/containerApps', parameters('containerAppName'))]"
+            },
+            "containerAppName": {
+              "type": "string",
+              "metadata": {
+                "description": "Container App name"
+              },
+              "value": "[parameters('containerAppName')]"
+            },
+            "containerAppFqdn": {
+              "type": "string",
+              "metadata": {
+                "description": "Container App fully qualified domain name"
+              },
+              "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName')), '2024-03-01').configuration.ingress.fqdn]"
+            },
+            "containerAppUrl": {
+              "type": "string",
+              "metadata": {
+                "description": "Container App HTTPS endpoint URL"
+              },
+              "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName')), '2024-03-01').configuration.ingress.fqdn)]"
+            },
+            "identityPrincipalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Container App system-assigned managed identity principal ID"
+              },
+              "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName')), '2024-03-01', 'full').identity.principalId]"
+            },
+            "fqdn": {
+              "type": "string",
+              "metadata": {
+                "description": "Container App FQDN for output compatibility"
+              },
+              "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName')), '2024-03-01').configuration.ingress.fqdn]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "containerAppsEnvironment",
+        "containerRegistry",
+        "rg"
+      ]
+    },
+    "openAi": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('openai-{0}', variables('resourceToken'))]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "openAiAccountName": {
+            "value": "[format('{0}-{1}-{2}', variables('abbrs').openAiAccount, parameters('environmentName'), variables('resourceToken'))]"
+          },
+          "location": {
+            "value": "[parameters('openAiLocation')]"
+          },
+          "modelName": {
+            "value": "[parameters('openAiModelName')]"
+          },
+          "modelVersion": {
+            "value": "[parameters('openAiModelVersion')]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.3.11034",
+              "templateHash": "7795148574889730887"
+            }
+          },
+          "parameters": {
+            "openAiAccountName": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 64,
+              "metadata": {
+                "description": "Name of the Azure OpenAI account"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for OpenAI service (must support GPT-4)"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags for organization and cost tracking"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "S0",
+              "allowedValues": [
+                "S0"
+              ],
+              "metadata": {
+                "description": "Azure OpenAI SKU"
+              }
+            },
+            "modelName": {
+              "type": "string",
+              "defaultValue": "gpt-4o",
+              "metadata": {
+                "description": "Model name for deployment (e.g., gpt-4o, gpt-4-turbo)"
+              }
+            },
+            "modelVersion": {
+              "type": "string",
+              "defaultValue": "2024-08-06",
+              "metadata": {
+                "description": "Model version"
+              }
+            },
+            "deploymentName": {
+              "type": "string",
+              "defaultValue": "[parameters('modelName')]",
+              "metadata": {
+                "description": "Deployment name for the model"
+              }
+            },
+            "modelCapacity": {
+              "type": "int",
+              "defaultValue": 10,
+              "minValue": 1,
+              "maxValue": 1000,
+              "metadata": {
+                "description": "Model capacity in thousands of tokens per minute"
+              }
+            },
+            "publicNetworkAccess": {
+              "type": "string",
+              "defaultValue": "Enabled",
+              "allowedValues": [
+                "Enabled",
+                "Disabled"
+              ],
+              "metadata": {
+                "description": "Public network access setting"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.CognitiveServices/accounts",
+              "apiVersion": "2024-04-01-preview",
+              "name": "[parameters('openAiAccountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "OpenAI",
+              "sku": {
+                "name": "[parameters('sku')]"
+              },
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "customSubDomainName": "[parameters('openAiAccountName')]",
+                "publicNetworkAccess": "[parameters('publicNetworkAccess')]",
+                "networkAcls": {
+                  "defaultAction": "Allow"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.CognitiveServices/accounts/deployments",
+              "apiVersion": "2024-04-01-preview",
+              "name": "[format('{0}/{1}', parameters('openAiAccountName'), parameters('deploymentName'))]",
+              "sku": {
+                "name": "Standard",
+                "capacity": "[parameters('modelCapacity')]"
+              },
+              "properties": {
+                "model": {
+                  "format": "OpenAI",
+                  "name": "[parameters('modelName')]",
+                  "version": "[parameters('modelVersion')]"
+                },
+                "versionUpgradeOption": "OnceNewDefaultVersionAvailable",
+                "raiPolicyName": "Microsoft.Default"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.CognitiveServices/accounts', parameters('openAiAccountName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "openAiAccountId": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure OpenAI account resource ID"
+              },
+              "value": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('openAiAccountName'))]"
+            },
+            "openAiAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure OpenAI account name"
+              },
+              "value": "[parameters('openAiAccountName')]"
+            },
+            "endpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure OpenAI service endpoint URL"
+              },
+              "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('openAiAccountName')), '2024-04-01-preview').endpoint]"
+            },
+            "deploymentName": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure OpenAI model deployment name"
+              },
+              "value": "[parameters('deploymentName')]"
+            },
+            "identityPrincipalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure OpenAI system-assigned managed identity principal ID"
+              },
+              "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('openAiAccountName')), '2024-04-01-preview', 'full').identity.principalId]"
+            },
+            "openAiEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure OpenAI account endpoint (alternative output name)"
+              },
+              "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('openAiAccountName')), '2024-04-01-preview').endpoint]"
+            },
+            "openAiDeploymentName": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure OpenAI deployment name (alternative output name)"
+              },
+              "value": "[parameters('deploymentName')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "rg"
+      ]
+    },
+    "botService": {
+      "condition": "[not(empty(parameters('botAppId')))]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('bot-{0}', variables('resourceToken'))]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "botName": {
+            "value": "[format('{0}-{1}-{2}', variables('abbrs').botService, parameters('environmentName'), variables('resourceToken'))]"
+          },
+          "botDisplayName": {
+            "value": "[parameters('botDisplayName')]"
+          },
+          "botEndpoint": {
+            "value": "[format('https://{0}/api/messages', reference('containerApp').outputs.containerAppFqdn.value)]"
+          },
+          "microsoftAppId": {
+            "value": "[parameters('botAppId')]"
+          },
+          "microsoftAppTenantId": {
+            "value": "[parameters('botTenantId')]"
+          },
+          "location": {
+            "value": "global"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.3.11034",
+              "templateHash": "13354223371384071998"
+            }
+          },
+          "parameters": {
+            "botName": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 64,
+              "metadata": {
+                "description": "Name of the Azure Bot Service"
+              }
+            },
+            "botDisplayName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "metadata": {
+                "description": "Display name for the bot"
+              }
+            },
+            "botEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Bot endpoint URL for receiving messages"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "global",
+              "metadata": {
+                "description": "Azure region for bot service (note: Bot Service uses global)"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags for organization and cost tracking"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "F0",
+              "allowedValues": [
+                "F0",
+                "S1"
+              ],
+              "metadata": {
+                "description": "Bot SKU"
+              }
+            },
+            "microsoftAppId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Microsoft App ID (MSI) for the bot"
+              }
+            },
+            "microsoftAppTenantId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Microsoft App Tenant ID for SingleTenant auth"
+              }
+            },
+            "microsoftAppType": {
+              "type": "string",
+              "defaultValue": "SingleTenant",
+              "allowedValues": [
+                "SingleTenant",
+                "UserAssignedMSI"
+              ],
+              "metadata": {
+                "description": "Bot authentication type - MultiTenant deprecated as of 2025"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.BotService/botServices",
+              "apiVersion": "2022-09-15",
+              "name": "[parameters('botName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]"
+              },
+              "kind": "azurebot",
+              "properties": {
+                "displayName": "[parameters('botDisplayName')]",
+                "endpoint": "[parameters('botEndpoint')]",
+                "msaAppId": "[parameters('microsoftAppId')]",
+                "msaAppType": "[parameters('microsoftAppType')]",
+                "msaAppTenantId": "[parameters('microsoftAppTenantId')]",
+                "schemaTransformationVersion": "1.3"
+              }
+            },
+            {
+              "type": "Microsoft.BotService/botServices/channels",
+              "apiVersion": "2022-09-15",
+              "name": "[format('{0}/{1}', parameters('botName'), 'MsTeamsChannel')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "channelName": "MsTeamsChannel",
+                "properties": {
+                  "enableCalling": false,
+                  "isEnabled": true
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.BotService/botServices', parameters('botName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "botServiceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Bot Service resource ID"
+              },
+              "value": "[resourceId('Microsoft.BotService/botServices', parameters('botName'))]"
+            },
+            "botServiceName": {
+              "type": "string",
+              "metadata": {
+                "description": "Bot Service name"
+              },
+              "value": "[parameters('botName')]"
+            },
+            "botId": {
+              "type": "string",
+              "metadata": {
+                "description": "Microsoft App ID for the bot"
+              },
+              "value": "[reference(resourceId('Microsoft.BotService/botServices', parameters('botName')), '2022-09-15').msaAppId]"
+            },
+            "botEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Bot endpoint URL"
+              },
+              "value": "[reference(resourceId('Microsoft.BotService/botServices', parameters('botName')), '2022-09-15').endpoint]"
+            },
+            "teamsChannelId": {
+              "type": "string",
+              "metadata": {
+                "description": "Teams channel resource ID"
+              },
+              "value": "[resourceId('Microsoft.BotService/botServices/channels', parameters('botName'), 'MsTeamsChannel')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "containerApp",
+        "rg"
+      ]
+    },
+    "keyVault": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[format('keyvault-{0}', variables('resourceToken'))]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "keyVaultName": {
+            "value": "[format('{0}-{1}', variables('abbrs').keyVault, variables('resourceToken'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "principalId": {
+            "value": "[parameters('principalId')]"
+          },
+          "principalType": {
+            "value": "[parameters('principalType')]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.3.11034",
+              "templateHash": "309217814234411365"
+            }
+          },
+          "parameters": {
+            "keyVaultName": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 24,
+              "metadata": {
+                "description": "Name of the Azure Key Vault"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Azure region for the Key Vault"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Resource tags for organization and cost tracking"
+              }
+            },
+            "principalId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Principal ID for RBAC role assignment (user or service principal)"
+              }
+            },
+            "principalType": {
+              "type": "string",
+              "defaultValue": "User",
+              "allowedValues": [
+                "User",
+                "Group",
+                "ServicePrincipal"
+              ],
+              "metadata": {
+                "description": "Principal type for RBAC role assignment"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "standard",
+              "allowedValues": [
+                "standard",
+                "premium"
+              ],
+              "metadata": {
+                "description": "Key Vault SKU"
+              }
+            },
+            "enableSoftDelete": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable soft delete for Key Vault"
+              }
+            },
+            "softDeleteRetentionInDays": {
+              "type": "int",
+              "defaultValue": 7,
+              "minValue": 7,
+              "maxValue": 90,
+              "metadata": {
+                "description": "Soft delete retention in days"
+              }
+            },
+            "enablePurgeProtection": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable purge protection"
+              }
+            },
+            "publicNetworkAccess": {
+              "type": "string",
+              "defaultValue": "Enabled",
+              "allowedValues": [
+                "Enabled",
+                "Disabled"
+              ],
+              "metadata": {
+                "description": "Public network access setting"
+              }
+            }
+          },
+          "variables": {
+            "keyVaultSecretsOfficerRoleId": "b86a8fe4-44ce-4948-aee5-eccb2c155cd7"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.KeyVault/vaults",
+              "apiVersion": "2023-07-01",
+              "name": "[parameters('keyVaultName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "sku": {
+                  "family": "A",
+                  "name": "[parameters('sku')]"
+                },
+                "tenantId": "[subscription().tenantId]",
+                "enableRbacAuthorization": true,
+                "enableSoftDelete": "[parameters('enableSoftDelete')]",
+                "softDeleteRetentionInDays": "[parameters('softDeleteRetentionInDays')]",
+                "enablePurgeProtection": "[if(parameters('enablePurgeProtection'), true(), null())]",
+                "publicNetworkAccess": "[parameters('publicNetworkAccess')]",
+                "networkAcls": {
+                  "bypass": "AzureServices",
+                  "defaultAction": "Allow"
+                }
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('principalId')))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('keyVaultName'))]",
+              "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), parameters('principalId'), variables('keyVaultSecretsOfficerRoleId'))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('keyVaultSecretsOfficerRoleId'))]",
+                "principalId": "[parameters('principalId')]",
+                "principalType": "[parameters('principalType')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "keyVaultId": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault resource ID"
+              },
+              "value": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+            },
+            "keyVaultName": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault name"
+              },
+              "value": "[parameters('keyVaultName')]"
+            },
+            "keyVaultUri": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault URI"
+              },
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), '2023-07-01').vaultUri]"
+            },
+            "endpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault endpoint URL"
+              },
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), '2023-07-01').vaultUri]"
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault resource name for module references"
+              },
+              "value": "[parameters('keyVaultName')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "rg"
+      ]
     }
   },
   "outputs": {
@@ -570,28 +1683,42 @@
       "metadata": {
         "description": "Azure OpenAI service endpoint URL"
       },
-      "value": "https://placeholder-openai-endpoint.openai.azure.com/"
+      "value": "[reference('openAi').outputs.endpoint.value]"
     },
     "AZURE_OPENAI_DEPLOYMENT_NAME": {
       "type": "string",
       "metadata": {
         "description": "Azure OpenAI GPT-4 deployment name"
       },
-      "value": "[parameters('openAiModelName')]"
+      "value": "[reference('openAi').outputs.deploymentName.value]"
     },
     "BOT_ID": {
       "type": "string",
       "metadata": {
         "description": "Azure Bot Service application ID"
       },
-      "value": "placeholder-bot-id"
+      "value": "[if(not(empty(parameters('botAppId'))), reference('botService').outputs.botId.value, '')]"
+    },
+    "BOT_TENANT_ID": {
+      "type": "string",
+      "metadata": {
+        "description": "Bot tenant ID for SingleTenant authentication"
+      },
+      "value": "[parameters('botTenantId')]"
     },
     "KEY_VAULT_NAME": {
       "type": "string",
       "metadata": {
         "description": "Key Vault name for secrets storage"
       },
-      "value": "[format('{0}-{1}-{2}', variables('abbrs').keyVault, parameters('environmentName'), variables('resourceToken'))]"
+      "value": "[reference('keyVault').outputs.keyVaultName.value]"
+    },
+    "KEY_VAULT_URI": {
+      "type": "string",
+      "metadata": {
+        "description": "Key Vault URI"
+      },
+      "value": "[reference('keyVault').outputs.keyVaultUri.value]"
     },
     "APPLICATIONINSIGHTS_CONNECTION_STRING": {
       "type": "string",
@@ -605,14 +1732,49 @@
       "metadata": {
         "description": "Azure Container Registry login server endpoint"
       },
-      "value": "[format('{0}{1}{2}.azurecr.io', variables('abbrs').containerRegistry, replace(parameters('environmentName'), '-', ''), variables('resourceToken'))]"
+      "value": "[reference('containerRegistry').outputs.loginServer.value]"
+    },
+    "AZURE_CONTAINER_REGISTRY_ENDPOINT": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Container Registry endpoint for azd"
+      },
+      "value": "[reference('containerRegistry').outputs.loginServer.value]"
+    },
+    "CONTAINER_REGISTRY_NAME": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Container Registry name"
+      },
+      "value": "[reference('containerRegistry').outputs.containerRegistryName.value]"
     },
     "CONTAINER_APP_NAME": {
       "type": "string",
       "metadata": {
         "description": "Container App name for the API service"
       },
-      "value": "[format('{0}-{1}-{2}', variables('abbrs').containerApps, parameters('environmentName'), variables('resourceToken'))]"
+      "value": "[reference('containerApp').outputs.containerAppName.value]"
+    },
+    "SERVICE_API_NAME": {
+      "type": "string",
+      "metadata": {
+        "description": "Container App name for azd service mapping (api service)"
+      },
+      "value": "[reference('containerApp').outputs.containerAppName.value]"
+    },
+    "CONTAINER_APP_URL": {
+      "type": "string",
+      "metadata": {
+        "description": "Container App URL"
+      },
+      "value": "[reference('containerApp').outputs.containerAppUrl.value]"
+    },
+    "CONTAINER_APP_FQDN": {
+      "type": "string",
+      "metadata": {
+        "description": "Container App FQDN"
+      },
+      "value": "[reference('containerApp').outputs.containerAppFqdn.value]"
     },
     "CONTAINER_APP_ENVIRONMENT_NAME": {
       "type": "string",
@@ -634,6 +1796,13 @@
         "description": "Azure region where resources are deployed"
       },
       "value": "[parameters('location')]"
+    },
+    "AZURE_OPENAI_LOCATION": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure OpenAI region where OpenAI service is deployed"
+      },
+      "value": "[parameters('openAiLocation')]"
     },
     "RESOURCE_TOKEN": {
       "type": "string",

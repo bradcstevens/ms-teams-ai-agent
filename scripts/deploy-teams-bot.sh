@@ -59,8 +59,8 @@ DESCRIPTION:
     4. Deployment validation and testing
 
 PREREQUISITES:
-    - Azure infrastructure deployed (Task 1)
-    - Container app running (Task 2)
+    - Azure infrastructure deployed
+    - Container app running
     - Azure CLI authenticated
 EOF
     exit 1

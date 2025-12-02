@@ -1,11 +1,11 @@
 #!/bin/bash
 # Post-Provision Bot Registration Script
-# This script will be implemented in Phase 4: Teams Deployment (Task 4.1)
+# Handles bot registration after infrastructure provisioning
 
 echo "=== Bot Registration Setup ==="
 echo "This script will register the Azure Bot Service and configure credentials"
 echo ""
-echo "TODO: Implement in Task 4.1 - Bot Registration Automation Script"
+echo "See create-bot-registration.sh for full automation"
 echo ""
 echo "Manual steps required for now:"
 echo "1. Create Azure Bot Service in Azure Portal"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Task 1.3 Validation Script - TDD RED Phase
+# Networking Validation Script
 # Tests for Networking & Environment Bicep Modules
 
 set -uo pipefail
@@ -17,7 +17,7 @@ PASSED=0
 FAILED=0
 
 echo "=========================================="
-echo "Task 1.3 Validation - Networking & Environment"
+echo "Networking & Environment Validation"
 echo "=========================================="
 echo ""
 

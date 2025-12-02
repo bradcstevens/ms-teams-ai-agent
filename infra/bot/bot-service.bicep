@@ -1,5 +1,4 @@
 // Azure Bot Service Module
-// Task 1.6: Bot Service & Security Bicep Module
 // Creates Azure Bot Service with Teams channel integration
 
 @description('Name of the Azure Bot Service')

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Infrastructure Structure Validation Script
-# Task 1.7: Basic validation without requiring Azure CLI
+# Basic validation without requiring Azure CLI
 # Tests file existence and content requirements
 
 set -e
@@ -47,18 +47,18 @@ run_test() {
 echo "=== Phase 1: Module File Existence ==="
 echo ""
 
-# Task 1.4: Container Infrastructure
+# Container Infrastructure
 run_test "Container Registry module exists" \
     "test -f '$INFRA_DIR/core/host/container-registry.bicep'"
 
 run_test "Container App module exists" \
     "test -f '$INFRA_DIR/core/host/container-app.bicep'"
 
-# Task 1.5: AI Services
+# AI Services
 run_test "Azure OpenAI module exists" \
     "test -f '$INFRA_DIR/ai/openai.bicep'"
 
-# Task 1.6: Bot Service & Security
+# Bot Service & Security
 run_test "Bot Service module exists" \
     "test -f '$INFRA_DIR/bot/bot-service.bicep'"
 

@@ -1,6 +1,20 @@
 # MS Teams AI Agent - Developer Guide
 
-This guide helps developers get started with the MS Teams AI Agent project, covering local setup, development workflow, testing, and contribution guidelines.
+Comprehensive guide for developers covering local setup, development workflow, API reference, testing, and contributing to the MS Teams AI Agent project.
+
+## Table of Contents
+
+1. [Prerequisites](#prerequisites)
+2. [Local Development Setup](#local-development-setup)
+3. [Project Structure](#project-structure)
+4. [Development Workflow](#development-workflow)
+5. [API Reference](#api-reference)
+6. [Testing](#testing)
+7. [MCP Server Development](#mcp-server-development)
+8. [Deployment](#deployment)
+9. [Troubleshooting](#troubleshooting)
+
+---
 
 ## Prerequisites
 
@@ -20,6 +34,8 @@ This guide helps developers get started with the MS Teams AI Agent project, cove
 - Azure subscription with Contributor access
 - Azure OpenAI service access (requires approval)
 - Permissions to create Bot Service registrations
+
+---
 
 ## Local Development Setup
 
@@ -50,7 +66,7 @@ Edit `.env` with your values:
 # Required for local development
 AZURE_OPENAI_ENDPOINT=https://your-openai.openai.azure.com
 AZURE_OPENAI_API_KEY=your-api-key
-AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4
+AZURE_OPENAI_DEPLOYMENT_NAME=gpt-5
 
 # Bot credentials (get from Azure Bot Service)
 BOT_APP_ID=your-bot-app-id
@@ -84,29 +100,52 @@ python -m uvicorn src.app.main:app --reload --port 8000
 curl http://localhost:8000/health
 ```
 
+---
+
 ## Project Structure
 
 ```
 ms-teams-ai-agent/
-├── src/
-│   ├── app/                    # Main application code
-│   │   ├── main.py            # FastAPI entrypoint
-│   │   ├── config/            # Configuration management
-│   │   ├── agent/             # AI agent logic
-│   │   ├── bot/               # Bot Framework handlers
-│   │   ├── mcp/               # MCP integration
-│   │   ├── teams/             # Teams utilities
-│   │   └── utils/             # Shared utilities
-│   ├── tests/                  # Test suite
-│   ├── Dockerfile             # Container definition
-│   └── requirements.txt       # Python dependencies
-├── infra/                      # Bicep infrastructure
-├── scripts/                    # Automation scripts
-├── teams/                      # Teams app manifest
-├── docs/                       # Documentation
-├── azure.yaml                  # azd configuration
-└── .env.example               # Environment template
+├── src/                            # Application source code
+│   ├── app/                        # Main application package
+│   │   ├── main.py                 # FastAPI entrypoint
+│   │   ├── agent/                  # AI agent with Azure OpenAI
+│   │   ├── bot/                    # Teams bot (auth, security, state)
+│   │   ├── config/                 # Pydantic settings
+│   │   ├── mcp/                    # MCP integration
+│   │   ├── teams/                  # Manifest generation/validation
+│   │   ├── telemetry/              # Application Insights
+│   │   └── utils/                  # Shared utilities
+│   ├── tests/                      # Unit tests
+│   ├── Dockerfile                  # Container definition
+│   └── requirements.txt            # Python dependencies
+├── infra/                          # Bicep infrastructure
+│   ├── main.bicep                  # Main orchestration
+│   ├── core/                       # Container Apps, Registry, Key Vault
+│   ├── ai/                         # Azure OpenAI
+│   └── bot/                        # Azure Bot Service
+├── scripts/                        # Automation scripts
+├── teams/                          # Teams app manifest & icons
+├── tests/                          # Integration tests
+│   ├── integration/                # Integration test suite
+│   └── docs/                       # Test documentation
+├── docs/                           # Project documentation
+├── azure.yaml                      # azd configuration
+└── .env.example                    # Environment template
 ```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/app/main.py` | FastAPI application entry point |
+| `src/app/bot/teams_bot.py` | TeamsBot message handler |
+| `src/app/agent/ai_agent.py` | AI agent with Azure OpenAI |
+| `src/app/mcp/manager.py` | MCP connection manager |
+| `infra/main.bicep` | Azure infrastructure definition |
+| `teams/manifest.json` | Teams app manifest |
+
+---
 
 ## Development Workflow
 
@@ -167,7 +206,6 @@ def process_message(
     Returns:
         The generated response string
     """
-    # Implementation
     pass
 ```
 
@@ -175,10 +213,6 @@ def process_message(
 
 ```
 <type>(<scope>): <subject>
-
-<body>
-
-<footer>
 ```
 
 Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
@@ -190,16 +224,128 @@ fix(bot): handle empty message payload
 docs(readme): update deployment instructions
 ```
 
+---
+
+## API Reference
+
+### Base URL
+
+- **Local Development**: `http://localhost:8000`
+- **Production**: `https://<container-app-name>.<region>.azurecontainerapps.io`
+
+### Endpoints
+
+#### Health Check
+
+```
+GET /health
+```
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "version": "1.0.0",
+  "timestamp": "2025-11-25T12:00:00.000Z",
+  "components": {
+    "openai": "connected",
+    "mcp": "operational"
+  }
+}
+```
+
+| Status | Description |
+|--------|-------------|
+| 200 | Application healthy |
+| 503 | Application unhealthy |
+
+#### Bot Messages Webhook
+
+```
+POST /api/messages
+```
+
+Receives messages from Azure Bot Service (Bot Framework Protocol).
+
+**Headers:**
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | Bot Framework JWT token |
+| `Content-Type` | Yes | `application/json` |
+
+**Request Body:** Bot Framework Activity object
+
+**Response:** 200 OK (empty body per Bot Framework protocol)
+
+| Status | Description |
+|--------|-------------|
+| 200 | Activity processed |
+| 401 | Invalid token |
+| 400 | Malformed payload |
+
+#### Root Endpoint
+
+```
+GET /
+```
+
+Returns application info with links to `/docs` and `/health`.
+
+#### OpenAPI Documentation
+
+```
+GET /docs
+```
+
+Interactive Swagger UI for testing endpoints.
+
+### Activity Types
+
+| Type | Description | Bot Response |
+|------|-------------|--------------|
+| `message` | Text message from user | AI-generated response |
+| `conversationUpdate` | User added/removed | Welcome message |
+| `messageReaction` | User reacted | Logged only |
+| `typing` | User is typing | None |
+
+### Error Responses
+
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable description"
+  }
+}
+```
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `UNAUTHORIZED` | 401 | Invalid token |
+| `INVALID_ACTIVITY` | 400 | Malformed payload |
+| `RATE_LIMITED` | 429 | Too many requests |
+| `OPENAI_ERROR` | 502 | Azure OpenAI error |
+| `MCP_ERROR` | 502 | MCP server error |
+
+### Rate Limiting
+
+| Endpoint | Limit | Window |
+|----------|-------|--------|
+| `/api/messages` | 100 requests | per minute per user |
+| `/health` | 1000 requests | per minute |
+
+---
+
 ## Testing
 
 ### Running Tests
 
 ```bash
-# All tests
+# All unit tests
 pytest src/tests/ -v
 
-# Specific test file
-pytest src/tests/test_mcp_config.py -v
+# Integration tests
+pytest tests/integration/ -v
 
 # With coverage
 pytest src/tests/ --cov=src/app --cov-report=html
@@ -213,7 +359,6 @@ src/tests/
 ├── test_mcp_config.py       # MCP configuration tests
 ├── test_mcp_discovery.py    # MCP discovery tests
 ├── test_mcp_client.py       # MCP client tests
-├── test_mcp_manager.py      # MCP manager tests
 ├── test_bot_handler.py      # Bot handler tests
 └── test_agent.py            # Agent logic tests
 ```
@@ -236,16 +381,9 @@ class TestMCPConfig:
 
         assert config is not None
         assert config.servers == {}
-
-    def test_load_missing_file_raises(self):
-        """Test that loading missing file raises appropriate error."""
-        with pytest.raises(FileNotFoundError):
-            MCPConfig.load("/nonexistent/path.json")
 ```
 
-## Local Testing with Bot Framework Emulator
-
-### Setup
+### Local Testing with Bot Framework Emulator
 
 1. Download [Bot Framework Emulator](https://github.com/Microsoft/BotFramework-Emulator/releases)
 
@@ -254,10 +392,7 @@ class TestMCPConfig:
    python -m uvicorn src.app.main:app --port 3978
    ```
 
-3. In Emulator, connect to:
-   ```
-   http://localhost:3978/api/messages
-   ```
+3. In Emulator, connect to `http://localhost:3978/api/messages`
 
 4. Leave App ID and Password empty for local testing
 
@@ -270,6 +405,8 @@ ngrok http 3978
 # Note the https URL (e.g., https://abc123.ngrok.io)
 # Update Bot Service endpoint to: https://abc123.ngrok.io/api/messages
 ```
+
+---
 
 ## MCP Server Development
 
@@ -318,22 +455,9 @@ class MyServer:
 }
 ```
 
-3. **Add tests**:
+3. **Add tests** in `src/tests/test_my_server.py`
 
-```python
-# src/tests/test_my_server.py
-import pytest
-from src.app.mcp.servers.my_server import MyServer
-
-class TestMyServer:
-    @pytest.fixture
-    def server(self):
-        return MyServer({"command": "echo", "args": ["test"]})
-
-    async def test_get_tools(self, server):
-        tools = await server.get_tools()
-        assert isinstance(tools, list)
-```
+---
 
 ## Deployment
 
@@ -369,11 +493,13 @@ azd env get-values
 # Run acceptance criteria validation
 ./scripts/validate-acceptance-criteria.sh
 
-# Full deployment validation (requires deployed resources)
+# Full deployment validation
 ./scripts/validate-full-deployment.sh --environment dev
 ```
 
-## Troubleshooting Development Issues
+---
+
+## Troubleshooting
 
 ### Virtual Environment Issues
 
@@ -401,7 +527,7 @@ pip install -e src/
 # Test MCP server manually
 npx -y @modelcontextprotocol/server-filesystem /tmp
 
-# Check server logs
+# Check server health
 python -c "
 from src.app.mcp.manager import MCPManager
 import asyncio
@@ -420,15 +546,16 @@ azd auth login
 az account show
 ```
 
+---
+
 ## Resources
 
 ### Documentation
 
-- [README.md](../README.md) - Project overview
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture
-- [OPERATIONS.md](./OPERATIONS.md) - Operations guide
-- [MCP_INTEGRATION.md](./MCP_INTEGRATION.md) - MCP setup
-- [TEAMS_DEPLOYMENT.md](./TEAMS_DEPLOYMENT.md) - Teams deployment
+- [OPERATIONS.md](./OPERATIONS.md) - Operations and monitoring
+- [MCP_INTEGRATION.md](./MCP_INTEGRATION.md) - MCP setup guide
+- [TEAMS_GUIDE.md](./TEAMS_GUIDE.md) - Teams deployment
 
 ### External Resources
 
@@ -438,13 +565,5 @@ az account show
 - [Azure Container Apps](https://learn.microsoft.com/azure/container-apps/)
 - [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/)
 
-### Getting Help
-
-- Check existing documentation
-- Review Application Insights logs
-- Search GitHub issues
-- Contact project maintainers
-
 ---
-*Last Updated: 2025-11-25*
-*Version: 1.0*
+*Last Updated: 2025-12-01*

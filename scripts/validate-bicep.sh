@@ -1,12 +1,11 @@
 #!/bin/bash
 # Bicep Infrastructure Validation Test Script
-# Tests for Task 1.2: Core Bicep Infrastructure Module
+# Tests Bicep Infrastructure Modules for correctness
 
 set -e
 
 echo "================================"
 echo "Bicep Infrastructure Validation"
-echo "Task 1.2: Core Bicep Infrastructure Module"
 echo "================================"
 echo ""
 

@@ -1,3 +1,4 @@
-# Task 1.7: Monitoring Infrastructure
-# Placeholder directory for:
-# - monitoring.bicep (Log Analytics Workspace and Application Insights)
+# Monitoring Infrastructure
+# Contains:
+# - loganalytics.bicep (Log Analytics Workspace)
+# - applicationinsights.bicep (Application Insights)

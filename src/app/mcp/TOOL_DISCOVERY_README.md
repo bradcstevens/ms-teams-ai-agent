@@ -304,7 +304,7 @@ pytest tests/test_mcp_bridge.py -v
 
 ## Integration with Agent Framework
 
-The tool discovery system integrates with Task 3.6 (Agent Framework Tool Bridge):
+The tool discovery system integrates with the Agent Framework Tool Bridge:
 
 1. **Tool Discovery**: Automatic discovery from MCP servers
 2. **Schema Conversion**: MCP format to Agent Framework format

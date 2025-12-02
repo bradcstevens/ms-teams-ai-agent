@@ -1,5 +1,5 @@
 """
-Security Headers and CORS Configuration (Task 4.4 & 4.5)
+Security Headers and CORS Configuration
 Implements production-grade security headers and CORS settings
 """
 from typing import Dict, List

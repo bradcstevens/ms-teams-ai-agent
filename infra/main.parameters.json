@@ -22,6 +22,24 @@
     },
     "botDisplayName": {
       "value": "${BOT_DISPLAY_NAME=AI Agent for Teams}"
+    },
+    "botAppId": {
+      "value": "${BOT_APP_ID=}"
+    },
+    "botTenantId": {
+      "value": "${BOT_TENANT_ID=}"
+    },
+    "mcpServers": {
+      "value": [
+        {
+          "name": "brave-search",
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+          "env": {
+            "BRAVE_API_KEY": "${BRAVE_API_KEY=}"
+          }
+        }
+      ]
     }
   }
 }

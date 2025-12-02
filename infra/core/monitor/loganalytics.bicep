@@ -1,5 +1,4 @@
 // Log Analytics Workspace Module
-// Task 1.3: Networking & Environment Bicep Module
 // Provides centralized logging infrastructure for Container Apps and Application Insights
 
 @description('Name of the Log Analytics Workspace')

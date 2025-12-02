@@ -1,5 +1,4 @@
 // Azure Infrastructure as Code - Main Bicep Template
-// Task 1.2: Core Bicep Infrastructure Module (main.bicep)
 // Azure AI Agent Framework for Microsoft Teams - MVP
 // Orchestrates all infrastructure modules for Container Apps, Azure OpenAI, Bot Service, and monitoring
 //
@@ -71,6 +70,9 @@ param botTenantId string = ''
 @description('Current timestamp for deployment tracking')
 param deploymentTimestamp string = utcNow()
 
+@description('MCP server configurations as JSON array (optional)')
+param mcpServers array = []
+
 // ============================================================================
 // VARIABLES
 // ============================================================================
@@ -104,6 +106,15 @@ var tags = {
   'deployment-timestamp': deploymentTimestamp
 }
 
+// Transform MCP servers array - ensure required fields exist with defaults
+// Each server gets: MCP_SERVER_<index>_NAME, MCP_SERVER_<index>_COMMAND, MCP_SERVER_<index>_ARGS, MCP_SERVER_<index>_ENV_*
+var mcpEnvironmentVariables = [for server in mcpServers: {
+  name: contains(server, 'name') ? server.name : 'unnamed-server'
+  command: contains(server, 'command') ? server.command : ''
+  args: contains(server, 'args') ? server.args : []
+  env: contains(server, 'env') ? server.env : {}
+}]
+
 // ============================================================================
 // RESOURCE GROUP
 // ============================================================================
@@ -117,10 +128,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
 // ============================================================================
 // MODULE ORCHESTRATION
 // ============================================================================
-// These modules will be implemented in subsequent tasks (1.3-1.7)
-// Module structure is defined here to establish dependency graph
 
-// Task 1.3: Networking & Environment Module
 // Log Analytics Workspace for centralized logging
 module logAnalytics './core/monitor/loganalytics.bicep' = {
   name: 'loganalytics-${resourceToken}'
@@ -162,7 +170,6 @@ module containerAppsEnvironment './core/host/container-apps-environment.bicep' =
   }
 }
 
-// Task 1.4: Container Infrastructure Module
 // Azure Container Registry and Container App
 module containerRegistry './core/host/container-registry.bicep' = {
   name: 'registry-${resourceToken}'
@@ -184,6 +191,7 @@ module containerApp './core/host/container-app.bicep' = {
     location: location
     tags: union(tags, { 'azd-service-name': 'api' })
     targetPort: 8000
+    mcpServers: mcpEnvironmentVariables
   }
   dependsOn: [
     containerAppsEnvironment
@@ -191,7 +199,6 @@ module containerApp './core/host/container-app.bicep' = {
   ]
 }
 
-// Task 1.5: AI Services Module
 // Azure OpenAI Service with GPT-4 deployment
 module openAi './ai/openai.bicep' = {
   name: 'openai-${resourceToken}'
@@ -205,7 +212,6 @@ module openAi './ai/openai.bicep' = {
   }
 }
 
-// Task 1.6: Bot Service & Security Module
 // Azure Bot Service and Key Vault
 // Bot Service is only deployed when botAppId is provided
 // For MVP: Run create-bot-registration.sh first, then redeploy with botAppId
@@ -252,6 +258,9 @@ output AZURE_OPENAI_DEPLOYMENT_NAME string = openAi.outputs.deploymentName
 
 @description('Azure Bot Service application ID')
 output BOT_ID string = !empty(botAppId) ? botService.outputs.botId : ''
+
+@description('Bot tenant ID for SingleTenant authentication')
+output BOT_TENANT_ID string = botTenantId
 
 @description('Key Vault name for secrets storage')
 output KEY_VAULT_NAME string = keyVault.outputs.keyVaultName

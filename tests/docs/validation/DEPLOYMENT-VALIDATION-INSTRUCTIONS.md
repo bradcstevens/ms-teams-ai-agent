@@ -1,5 +1,5 @@
 # Deployment Validation Instructions
-## Task 5.7 - Full Deployment Validation from Scratch
+## Full Deployment Validation from Scratch
 
 This document provides step-by-step instructions for executing a complete deployment validation of the MS Teams AI Agent.
 
@@ -490,24 +490,6 @@ Fill out `DEPLOYMENT-VALIDATION-REPORT.md` with:
 - [ ] Performance metrics
 - [ ] Any issues encountered
 - [ ] Screenshots from Teams testing
-
-#### 10.2 Update Task Master
-
-```bash
-# Log validation results
-task-master update-subtask --id=5.7 --prompt="
-Deployment validation completed:
-- Deployment time: [X] minutes
-- All resources created: [Yes/No]
-- Endpoint tests: [Pass/Fail]
-- Teams bot responds: [Yes/No]
-- Response time: [X] seconds
-- Issues: [List any]
-"
-
-# Mark subtask complete
-task-master set-status --id=5.7 --status=done
-```
 
 ---
 

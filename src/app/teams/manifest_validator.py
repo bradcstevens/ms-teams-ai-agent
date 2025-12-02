@@ -1,5 +1,5 @@
 """
-Teams App Manifest Validator (Task 4.2)
+Teams App Manifest Validator
 Validates Teams manifest against schema and best practices
 """
 import json

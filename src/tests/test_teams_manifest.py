@@ -1,6 +1,6 @@
 """
-Test Teams App Manifest Generation (Task 4.2)
-TDD: Write tests first, then implement manifest generation
+Test Teams App Manifest Generation
+Tests manifest generation with environment-specific values
 """
 import pytest
 import json

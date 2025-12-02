@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
   "manifestVersion": "1.16",
   "version": "1.0.0",
-  "id": "{{BOT_ID}}",
+  "id": "a8ff33bb-4064-4cf1-a397-c7a217514b22",
   "packageName": "com.microsoft.teams.aiagent",
   "developer": {
     "name": "AI Agent Development Team",
@@ -25,7 +25,7 @@
   "accentColor": "#0078D4",
   "bots": [
     {
-      "botId": "{{BOT_ID}}",
+      "botId": "a8ff33bb-4064-4cf1-a397-c7a217514b22",
       "scopes": [
         "personal",
         "team",
@@ -74,7 +74,7 @@
     "api.botframework.com"
   ],
   "webApplicationInfo": {
-    "id": "{{BOT_ID}}",
-    "resource": "api://{{BOT_ENDPOINT}}"
+    "id": "a8ff33bb-4064-4cf1-a397-c7a217514b22",
+    "resource": "api://ca-teams-ai-dev-lqwqw3wbbmrbo.proudfield-621c5071.eastus2.azurecontainerapps.io/api/messages"
   }
 }

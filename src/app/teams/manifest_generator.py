@@ -1,5 +1,5 @@
 """
-Teams App Manifest Generator (Task 4.2)
+Teams App Manifest Generator
 Generates Teams app manifest with environment-specific values
 """
 import os

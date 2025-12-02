@@ -1,5 +1,5 @@
 #!/bin/bash
-# Bot Registration Automation Script (Task 4.1)
+# Bot Registration Automation Script
 # Automates Azure Bot Service registration via Azure CLI
 # Generates bot credentials and stores them securely in Key Vault
 

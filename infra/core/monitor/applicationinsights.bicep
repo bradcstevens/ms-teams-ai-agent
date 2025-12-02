@@ -1,5 +1,4 @@
 // Application Insights Module
-// Task 1.3: Networking & Environment Bicep Module
 // Provides application performance monitoring and telemetry for the AI agent
 
 @description('Name of the Application Insights resource')

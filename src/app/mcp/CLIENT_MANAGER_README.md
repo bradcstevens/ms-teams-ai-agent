@@ -256,7 +256,7 @@ for server_name, is_healthy in health_status.items():
 
 ## Configuration Integration
 
-Works seamlessly with Task 3.1 configuration system:
+Works seamlessly with the configuration system:
 
 **mcp_servers.json:**
 ```json
@@ -374,7 +374,7 @@ pytest src/tests/test_mcp_manager.py -v
    signal.signal(signal.SIGTERM, shutdown_handler)
    ```
 
-## Integration with Task 3.3
+## Integration with Tool Discovery
 
 The client manager is ready for tool discovery integration:
 
@@ -386,7 +386,7 @@ for server_name in config.mcpServers.keys():
     tools = await client.get_tools()
     all_tools[server_name] = tools
 
-# Register tools with Agent Framework (Task 3.3)
+# Register tools with Agent Framework
 ```
 
 ## Troubleshooting

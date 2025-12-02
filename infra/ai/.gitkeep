@@ -1,3 +1,3 @@
-# Task 1.5: AI Services Module
-# Placeholder directory for:
+# AI Services Module
+# Contains:
 # - openai.bicep (Azure OpenAI Service with GPT-4 deployment)

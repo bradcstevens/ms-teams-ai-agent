@@ -421,5 +421,48 @@ scale:
 - Monitor token usage and adjust as needed
 
 ---
-*Last Updated: 2025-11-25*
-*Version: 1.0*
+
+## Known Issues & Limitations
+
+### Infrastructure
+
+| Issue | Impact | Workaround |
+|-------|--------|------------|
+| Bicep name length warnings (BCP335) | Resource creation may fail with long environment names | Use short environment names (< 10 chars) |
+| MCP server config requires restart | No hot reload for `mcp_servers.json` changes | Restart container after config changes |
+
+### Application
+
+| Issue | Impact | Workaround |
+|-------|--------|------------|
+| In-memory conversation state | Multi-turn conversations lost on restart | Users restart conversation after deployments |
+| Single-stage Dockerfile | Larger image size, slower deploys | None required - works correctly |
+
+### Technical Debt Priorities
+
+**High Priority:**
+- Implement proper message queue for async processing
+- Increase test coverage to 80%+
+- Add proper health check with dependency status
+- Implement rate limiting per user
+- Add proper audit logging
+
+**Medium Priority:**
+- Implement dependency injection container
+- Add request/response caching layer
+- Implement blue-green deployment strategy
+- Add security headers middleware
+
+For detailed issue tracking, see the project issue tracker.
+
+---
+
+## Related Documentation
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture
+- [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) - Development setup and workflow
+- [MCP_INTEGRATION.md](./MCP_INTEGRATION.md) - MCP server configuration
+- [TEAMS_GUIDE.md](./TEAMS_GUIDE.md) - Teams deployment and testing
+
+---
+*Last Updated: 2025-12-01*

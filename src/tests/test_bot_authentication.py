@@ -1,6 +1,6 @@
 """
-Test Bot Framework Authentication & Security (Task 4.4)
-TDD: Write tests first, then implement authentication middleware
+Test Bot Framework Authentication & Security
+Tests authentication middleware and JWT validation
 """
 import pytest
 from unittest.mock import Mock, AsyncMock, patch

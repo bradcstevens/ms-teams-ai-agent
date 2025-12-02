@@ -1,5 +1,5 @@
 #!/bin/bash
-# Full Deployment Validation Script (Task 5.7)
+# Full Deployment Validation Script
 # Validates complete end-to-end deployment from scratch
 
 set -euo pipefail

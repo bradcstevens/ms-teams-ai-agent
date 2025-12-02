@@ -1,5 +1,5 @@
 #!/bin/bash
-# Teams App Package Creation Script (Task 4.3)
+# Teams App Package Creation Script
 # Bundles manifest.json and icons into a deployment-ready .zip package
 
 set -euo pipefail
@@ -158,6 +158,9 @@ if [[ -z "$OUTPUT_FILE" ]]; then
     fi
     log_info "Output file: $OUTPUT_FILE"
 fi
+
+# Convert to absolute path to ensure it works after cd
+OUTPUT_FILE=$(cd "$(dirname "$OUTPUT_FILE")" && pwd)/$(basename "$OUTPUT_FILE")
 
 # Create output directory if needed
 OUTPUT_DIR=$(dirname "$OUTPUT_FILE")

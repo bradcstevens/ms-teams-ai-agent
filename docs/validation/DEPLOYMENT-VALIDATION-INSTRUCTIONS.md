@@ -191,10 +191,10 @@ azd version
 ## Related Documentation
 
 - [README.md](../../README.md) - Project overview and quick start
-- [TEAMS_DEPLOYMENT.md](../TEAMS_DEPLOYMENT.md) - Teams deployment guide
-- [TEAMS_TESTING.md](../TEAMS_TESTING.md) - Testing procedures
+- [TEAMS_GUIDE.md](../TEAMS_GUIDE.md) - Teams deployment and testing
+- [DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md) - Development setup and workflow
+- [OPERATIONS.md](../OPERATIONS.md) - Monitoring and troubleshooting
 - [MCP_INTEGRATION.md](../MCP_INTEGRATION.md) - MCP server configuration
 
 ---
-*Last Updated: 2025-11-25*
-*Task: 5.5 - Acceptance Criteria Validation Checklist*
+*Last Updated: 2025-12-01*

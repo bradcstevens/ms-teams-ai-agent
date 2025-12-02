@@ -1,6 +1,6 @@
 """
-Integration tests for Teams Deployment (Task 4.6)
-TDD: Write integration tests first for end-to-end deployment validation
+Integration tests for Teams Deployment
+Tests end-to-end deployment validation
 """
 import pytest
 import subprocess
@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 class TestBotRegistration:
-    """Test suite for bot registration automation (Task 4.1)."""
+    """Test suite for bot registration automation."""
 
     def test_bot_registration_script_exists(self):
         """Test that bot registration script exists."""
@@ -64,7 +64,7 @@ class TestBotRegistration:
 
 
 class TestTeamsPackageCreation:
-    """Test suite for Teams app package creation (Task 4.3)."""
+    """Test suite for Teams app package creation."""
 
     def test_package_creation_script_exists(self):
         """Test that package creation script exists."""
@@ -125,7 +125,7 @@ class TestTeamsPackageCreation:
 
 
 class TestEndToEndDeployment:
-    """Test suite for end-to-end Teams deployment testing (Task 4.6)."""
+    """Test suite for end-to-end Teams deployment testing."""
 
     def test_deployment_test_script_exists(self):
         """Test that deployment testing script exists."""
@@ -251,7 +251,7 @@ class TestDeploymentOrchestrator:
 
 
 class TestSecurityConfiguration:
-    """Test suite for public endpoint security (Task 4.5)."""
+    """Test suite for public endpoint security."""
 
     def test_security_configuration_documented(self):
         """Test security configuration is documented."""

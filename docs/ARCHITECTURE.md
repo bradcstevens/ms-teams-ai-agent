@@ -4,50 +4,41 @@
 
 The MS Teams AI Agent is a cloud-native AI assistant that integrates with Microsoft Teams, leveraging Azure OpenAI for intelligent responses and the Model Context Protocol (MCP) for extensible tool capabilities.
 
-```
-                                    +------------------+
-                                    |  Microsoft Teams |
-                                    |    (User UI)     |
-                                    +--------+---------+
-                                             |
-                                             | Bot Framework Protocol
-                                             v
-                                    +------------------+
-                                    | Azure Bot Service|
-                                    |  (Message Router)|
-                                    +--------+---------+
-                                             |
-                                             | HTTPS Webhook
-                                             v
-+-----------------------------------------------------------------------------------+
-|                            Azure Container Apps                                    |
-|  +-----------------------------------------------------------------------------+  |
-|  |                         Python Application Container                         |  |
-|  |                                                                             |  |
-|  |  +------------------+    +------------------+    +------------------+       |  |
-|  |  |   FastAPI Web    |    |   Teams Bot      |    |   AI Agent       |       |  |
-|  |  |   Framework      |--->|   Handler        |--->|   Orchestrator   |       |  |
-|  |  +------------------+    +------------------+    +--------+---------+       |  |
-|  |                                                          |                  |  |
-|  |                          +-------------------------------+                  |  |
-|  |                          |                               |                  |  |
-|  |                          v                               v                  |  |
-|  |              +------------------+            +------------------+           |  |
-|  |              |   MCP Manager    |            | Azure OpenAI     |           |  |
-|  |              |   (Tool Bridge)  |            | Client           |           |  |
-|  |              +--------+---------+            +------------------+           |  |
-|  |                       |                                                     |  |
-|  +-----------------------------------------------------------------------------+  |
-|                          |                                                        |
-+-----------------------------------------------------------------------------------+
-                           |
-          +----------------+----------------+
-          |                |                |
-          v                v                v
-   +-----------+    +-----------+    +-----------+
-   | Filesystem|    | Web Search|    |  Custom   |
-   | MCP Server|    | MCP Server|    | MCP Server|
-   +-----------+    +-----------+    +-----------+
+```mermaid
+flowchart TB
+    subgraph Teams["Microsoft Teams (User UI)"]
+        User[User]
+    end
+
+    subgraph BotService["Azure Bot Service (Message Router)"]
+        Router[Message Router]
+    end
+
+    subgraph ACA["Azure Container Apps"]
+        subgraph Container["Python Application Container"]
+            FastAPI[FastAPI Web Framework]
+            TeamsBot[Teams Bot Handler]
+            Agent[AI Agent Orchestrator]
+            MCP[MCP Manager<br/>Tool Bridge]
+            OpenAI[Azure OpenAI Client]
+        end
+    end
+
+    subgraph MCPServers["MCP Servers"]
+        FS[Filesystem<br/>MCP Server]
+        WS[Web Search<br/>MCP Server]
+        Custom[Custom<br/>MCP Server]
+    end
+
+    User -->|Bot Framework Protocol| Router
+    Router -->|HTTPS Webhook| FastAPI
+    FastAPI --> TeamsBot
+    TeamsBot --> Agent
+    Agent --> MCP
+    Agent --> OpenAI
+    MCP --> FS
+    MCP --> WS
+    MCP --> Custom
 ```
 
 ## Component Architecture
@@ -56,7 +47,7 @@ The MS Teams AI Agent is a cloud-native AI assistant that integrates with Micros
 
 **FastAPI Application** - Main entry point handling HTTP requests
 
-```
+```text
 src/app/
 ├── main.py              # FastAPI application entrypoint
 ├── __init__.py          # Package initialization
@@ -66,6 +57,7 @@ src/app/
 ```
 
 Key responsibilities:
+
 - HTTP request routing
 - Health check endpoints (`/health`)
 - Bot Framework webhook (`/api/messages`)
@@ -75,7 +67,7 @@ Key responsibilities:
 
 **Teams Bot Handler** - Processes Bot Framework activities
 
-```
+```text
 src/app/bot/
 ├── __init__.py
 ├── auth.py              # Bot authentication handling
@@ -85,6 +77,7 @@ src/app/bot/
 ```
 
 Key responsibilities:
+
 - Bot Framework authentication
 - Activity type routing (message, typing, etc.)
 - Conversation state persistence
@@ -94,13 +87,14 @@ Key responsibilities:
 
 **AI Agent Orchestrator** - Coordinates AI responses
 
-```
+```text
 src/app/agent/
 ├── __init__.py
 └── ai_agent.py          # Agent logic and orchestration
 ```
 
 Key responsibilities:
+
 - Azure OpenAI integration
 - Prompt engineering
 - Tool call routing to MCP
@@ -110,7 +104,7 @@ Key responsibilities:
 
 **Model Context Protocol Integration** - Extensible tool framework
 
-```
+```text
 src/app/mcp/
 ├── __init__.py
 ├── config.py            # MCP configuration management
@@ -131,6 +125,7 @@ src/app/mcp/
 ```
 
 Key responsibilities:
+
 - MCP server lifecycle management
 - Tool discovery and registration
 - Request/response bridging
@@ -141,7 +136,7 @@ Key responsibilities:
 
 **Teams Integration Utilities**
 
-```
+```text
 src/app/teams/
 ├── __init__.py
 ├── manifest_generator.py  # Teams manifest generation
@@ -149,6 +144,7 @@ src/app/teams/
 ```
 
 Key responsibilities:
+
 - Teams app manifest generation
 - Manifest schema validation
 - Bot capability configuration
@@ -157,7 +153,7 @@ Key responsibilities:
 
 **Shared Utilities**
 
-```
+```text
 src/app/utils/
 ├── __init__.py
 └── teams_helper.py      # Teams-specific helpers
@@ -167,7 +163,7 @@ src/app/utils/
 
 ### Azure Resources (Bicep)
 
-```
+```text
 infra/
 ├── main.bicep           # Main orchestration template
 ├── main.parameters.json # Parameter file
@@ -187,71 +183,85 @@ infra/
 
 ### Resource Topology
 
-```
-Resource Group
-├── Container Apps Environment
-│   └── Container App (Python Agent)
-├── Container Registry
-├── Azure OpenAI Service
-│   └── GPT-4 Deployment
-├── Bot Service
-│   └── Teams Channel
-├── Key Vault
-│   └── Bot Credentials
-├── Application Insights
-└── Log Analytics Workspace
+```mermaid
+flowchart TB
+    subgraph RG["Resource Group"]
+        subgraph CAE["Container Apps Environment"]
+            CA[Container App<br/>Python Agent]
+        end
+        CR[Container Registry]
+        subgraph AOAI["Azure OpenAI Service"]
+            GPT[GPT-5 Deployment]
+        end
+        subgraph Bot["Bot Service"]
+            Teams[Teams Channel]
+        end
+        subgraph KV["Key Vault"]
+            Creds[Bot Credentials]
+        end
+        AI[Application Insights]
+        LA[Log Analytics Workspace]
+    end
 ```
 
 ## Data Flow
 
 ### Message Processing Flow
 
-```
-1. User sends message in Teams
-   ↓
-2. Teams → Bot Framework → Azure Bot Service
-   ↓
-3. Bot Service webhooks to Container App /api/messages
-   ↓
-4. FastAPI routes to Teams Bot Handler
-   ↓
-5. Bot Handler validates auth, extracts message
-   ↓
-6. AI Agent receives message context
-   ↓
-7. Agent queries Azure OpenAI with conversation history
-   ↓
-8. If tool call needed:
-   │   ↓
-   │   MCP Manager routes to appropriate server
-   │   ↓
-   │   Tool executes and returns result
-   │   ↓
-   │   Agent incorporates result into response
-   ↓
-9. Response sent back through Bot Framework
-   ↓
-10. User sees response in Teams
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant T as Teams
+    participant B as Bot Service
+    participant F as FastAPI
+    participant H as Bot Handler
+    participant A as AI Agent
+    participant O as Azure OpenAI
+    participant M as MCP Manager
+
+    U->>T: 1. Send message
+    T->>B: 2. Bot Framework Protocol
+    B->>F: 3. HTTPS Webhook /api/messages
+    F->>H: 4. Route to Bot Handler
+    H->>H: 5. Validate auth, extract message
+    H->>A: 6. Pass message context
+    A->>O: 7. Query with conversation history
+    O-->>A: Response
+
+    alt Tool call needed
+        A->>M: 8a. Route to MCP
+        M->>M: 8b. Execute tool
+        M-->>A: 8c. Return result
+    end
+
+    A-->>H: 9. Format response
+    H-->>B: Send via Bot Framework
+    B-->>T: Deliver message
+    T-->>U: 10. Display response
 ```
 
 ### MCP Tool Flow
 
-```
-1. Agent determines tool is needed
-   ↓
-2. MCP Bridge receives tool request
-   ↓
-3. Registry looks up tool → server mapping
-   ↓
-4. Circuit Breaker checks server health
-   ↓
-5. Client sends request to MCP server
-   ↓
-6. Server executes tool, returns result
-   ↓
-7. Bridge formats result for Agent
-   ↓
-8. Agent incorporates into AI response
+```mermaid
+sequenceDiagram
+    participant A as AI Agent
+    participant B as MCP Bridge
+    participant R as Registry
+    participant CB as Circuit Breaker
+    participant C as MCP Client
+    participant S as MCP Server
+
+    A->>B: 1. Tool request
+    B->>R: 2. Lookup tool → server mapping
+    R-->>B: Server info
+    B->>CB: 3. Check server health
+    CB-->>B: Health OK
+    B->>C: 4. Send request
+    C->>S: 5. Execute tool
+    S-->>C: 6. Return result
+    C-->>B: Result
+    B->>B: 7. Format for Agent
+    B-->>A: 8. Formatted response
 ```
 
 ## Security Architecture
@@ -265,12 +275,14 @@ Resource Group
 
 ### Secret Management
 
-```
-Key Vault Secrets:
-├── BOT_APP_ID
-├── BOT_APP_PASSWORD
-├── AZURE_OPENAI_API_KEY (if not using managed identity)
-└── MCP_SERVER_CREDENTIALS (optional)
+```mermaid
+flowchart LR
+    subgraph KV["Key Vault"]
+        S1[BOT_APP_ID]
+        S2[BOT_APP_PASSWORD]
+        S3[AZURE_OPENAI_API_KEY<br/>if not using managed identity]
+        S4[MCP_SERVER_CREDENTIALS<br/>optional]
+    end
 ```
 
 ### Network Security
@@ -307,18 +319,21 @@ rules:
 
 ### Telemetry Collection
 
-```
-Application Insights
-├── Request traces
-├── Dependency calls (OpenAI, MCP)
-├── Custom metrics
-├── Exception logging
-└── Performance counters
+```mermaid
+flowchart TB
+    subgraph AI["Application Insights"]
+        RT[Request traces]
+        DC[Dependency calls<br/>OpenAI, MCP]
+        CM[Custom metrics]
+        EL[Exception logging]
+        PC[Performance counters]
+    end
 
-Log Analytics
-├── Container logs
-├── Infrastructure logs
-└── Security logs
+    subgraph LA["Log Analytics"]
+        CL[Container logs]
+        IL[Infrastructure logs]
+        SL[Security logs]
+    end
 ```
 
 ### Key Metrics
@@ -333,25 +348,30 @@ Log Analytics
 
 ### azd Workflow
 
-```
-azd up
-├── prepackage hook (validate-config.sh)
-├── provision (Bicep deployment)
-│   └── Creates all Azure resources
-├── postprovision hook (setup-bot.sh)
-│   └── Registers bot with Bot Service
-├── deploy (Container build & push)
-│   └── Builds image, deploys to Container Apps
-└── postdeploy hook (generate-teams-manifest.sh)
-    └── Creates Teams app package
+```mermaid
+flowchart TB
+    AZD[azd up] --> Pre[prepackage hook<br/>validate-config.sh]
+    Pre --> Prov[provision<br/>Bicep deployment]
+    Prov --> Resources[Creates all Azure resources]
+    Prov --> Post[postprovision hook<br/>setup-bot.sh]
+    Post --> BotReg[Registers bot with Bot Service]
+    Post --> Deploy[deploy<br/>Container build & push]
+    Deploy --> Image[Builds image, deploys to Container Apps]
+    Deploy --> PostDeploy[postdeploy hook<br/>generate-teams-manifest.sh]
+    PostDeploy --> Package[Creates Teams app package]
 ```
 
 ### Environment Promotion
 
-```
-Development → Staging → Production
-    │            │           │
-    └── azd environment management ─┘
+```mermaid
+flowchart LR
+    Dev[Development] --> Staging[Staging] --> Prod[Production]
+
+    subgraph AZD["azd environment management"]
+        Dev
+        Staging
+        Prod
+    end
 ```
 
 ## Extension Points
@@ -381,7 +401,7 @@ Development → Staging → Production
 | Runtime | Python 3.11+ |
 | Web Framework | FastAPI |
 | Bot SDK | botbuilder-python |
-| AI | Azure OpenAI (GPT-4) |
+| AI | Azure OpenAI (GPT-5) |
 | Hosting | Azure Container Apps |
 | IaC | Bicep |
 | Deployment | Azure Developer CLI (azd) |
@@ -389,5 +409,6 @@ Development → Staging → Production
 | Secrets | Azure Key Vault |
 
 ---
-*Last Updated: 2025-11-25*
-*Version: 1.0*
+
+*Last Updated: 2025-12-01*
+*Version: 1.1*

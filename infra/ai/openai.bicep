@@ -1,5 +1,4 @@
 // Azure OpenAI Service Module
-// Task 1.5: AI Services Bicep Module
 // Creates Azure OpenAI account with GPT-4 deployment and managed identity authentication
 
 @description('Name of the Azure OpenAI account')

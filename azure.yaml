@@ -44,8 +44,54 @@ services:
       PYTHON_ENV: "production"
       LOG_LEVEL: "INFO"
 
+      # MCP Server Configuration (Optional)
+      # Configure MCP servers via environment variables for Azure Container Apps
+      # Format: MCP_SERVER_N_* where N is the server number (1, 2, 3, etc.)
+      # Example configuration for filesystem server:
+      # MCP_SERVER_1_NAME: "filesystem"
+      # MCP_SERVER_1_COMMAND: "npx"
+      # MCP_SERVER_1_ARGS: "-y,@modelcontextprotocol/server-filesystem,/workspace"
+      # MCP_SERVER_1_TRANSPORT: "stdio"
+      # MCP_SERVER_1_ENABLED: "true"
+      # MCP_SERVER_1_DESCRIPTION: "Filesystem access server"
+      #
+      # Example configuration for web search server:
+      # MCP_SERVER_2_NAME: "web-search"
+      # MCP_SERVER_2_COMMAND: "python"
+      # MCP_SERVER_2_ARGS: "-m,mcp_server_web_search"
+      # MCP_SERVER_2_TRANSPORT: "stdio"
+      # MCP_SERVER_2_ENABLED: "true"
+      # MCP_SERVER_2_ENV_API_KEY: ${WEB_SEARCH_API_KEY}
+      # MCP_SERVER_2_DESCRIPTION: "Web search integration"
+      #
+      # Optimization hint (optional):
+      # MCP_SERVER_COUNT: "2"
+
 # Deployment workflow hooks
 hooks:
+  # Pre-provision hook: Create bot app registration before infrastructure deployment
+  preprovision:
+    posix:
+      shell: sh
+      run: |
+        echo "Creating bot app registration..."
+        if [ -f "./scripts/preprovision-bot.sh" ]; then
+          ./scripts/preprovision-bot.sh
+        else
+          echo "WARNING: preprovision-bot.sh not found"
+          echo "Bot Service will not be deployed without BOT_APP_ID"
+        fi
+    windows:
+      shell: pwsh
+      run: |
+        Write-Host "Creating bot app registration..."
+        if (Test-Path "./scripts/preprovision-bot.ps1") {
+          ./scripts/preprovision-bot.ps1
+        } else {
+          Write-Host "WARNING: preprovision-bot.ps1 not found"
+          Write-Host "Bot Service will not be deployed without BOT_APP_ID"
+        }
+
   # Pre-package hook: Validate configuration before packaging
   prepackage:
     posix:
@@ -94,33 +140,193 @@ hooks:
         }
         Write-Host "Post-provision configuration complete"
 
-  # Post-deploy hook: Generate Teams app manifest
+  # Post-deploy hook: Generate Teams app manifest and create package
   postdeploy:
     posix:
       shell: sh
       run: |
-        echo "Generating Teams app manifest..."
-        if [ -f "./scripts/generate-teams-manifest.sh" ]; then
-          ./scripts/generate-teams-manifest.sh
-        else
-          echo "Manifest generation script not found, skipping..."
-          echo "WARNING: Teams manifest must be generated manually"
+        echo "=========================================="
+        echo "Generating Teams App Package"
+        echo "=========================================="
+
+        # Get environment name for package naming
+        ENVIRONMENT="${AZURE_ENV_NAME:-dev}"
+        APP_VERSION="1.0.0"
+
+        # Get deployment outputs from azd env
+        BOT_ID=$(azd env get-values 2>/dev/null | grep "^BOT_ID=" | cut -d= -f2 | tr -d '"' || echo "")
+        CONTAINER_APP_FQDN=$(azd env get-values 2>/dev/null | grep "^CONTAINER_APP_FQDN=" | cut -d= -f2 | tr -d '"' || echo "")
+
+        # Fallback: try BOT_APP_ID if BOT_ID is empty
+        if [ -z "$BOT_ID" ]; then
+          BOT_ID=$(azd env get-values 2>/dev/null | grep "^BOT_APP_ID=" | cut -d= -f2 | tr -d '"' || echo "")
         fi
-        echo "Deployment complete!"
-        echo "Next steps:"
-        echo "1. Upload the Teams app manifest to Teams Admin Center"
-        echo "2. Test the bot in Microsoft Teams"
+
+        # Validate required variables
+        if [ -z "$BOT_ID" ] || [ -z "$CONTAINER_APP_FQDN" ]; then
+          echo "WARNING: BOT_ID or CONTAINER_APP_FQDN not available from deployment"
+          echo "BOT_ID: ${BOT_ID:-<not set>}"
+          echo "CONTAINER_APP_FQDN: ${CONTAINER_APP_FQDN:-<not set>}"
+          echo ""
+          echo "Skipping automated Teams package generation."
+          echo "Please run the following manually after deployment completes:"
+          echo "  ./scripts/generate-teams-manifest.sh --bot-id <BOT_ID> --endpoint <ENDPOINT>"
+          echo "  ./scripts/create-teams-package.sh --input ./teams --output ./teams-app.zip"
+          exit 0
+        fi
+
+        # Construct bot endpoint URL
+        BOT_ENDPOINT="${CONTAINER_APP_FQDN}/api/messages"
+
+        echo "Bot ID: $BOT_ID"
+        echo "Bot Endpoint: https://$BOT_ENDPOINT"
+        echo "Environment: $ENVIRONMENT"
+        echo ""
+
+        # Step 1: Generate Teams manifest with deployment values
+        if [ -f "./scripts/generate-teams-manifest.sh" ]; then
+          echo "Step 1: Generating Teams manifest..."
+          ./scripts/generate-teams-manifest.sh \
+            --bot-id "$BOT_ID" \
+            --endpoint "$BOT_ENDPOINT" \
+            --version "$APP_VERSION" \
+            --environment "$ENVIRONMENT" || {
+            echo "WARNING: Manifest generation encountered issues"
+          }
+        else
+          echo "ERROR: generate-teams-manifest.sh not found"
+          exit 1
+        fi
+
+        echo ""
+
+        # Step 2: Create Teams app package (.zip)
+        if [ -f "./scripts/create-teams-package.sh" ]; then
+          echo "Step 2: Creating Teams app package..."
+          PACKAGE_NAME="teams-app-${ENVIRONMENT}-${APP_VERSION}.zip"
+          ./scripts/create-teams-package.sh \
+            --input ./teams \
+            --output "./$PACKAGE_NAME" \
+            --version "$APP_VERSION" \
+            --environment "$ENVIRONMENT" || {
+            echo "WARNING: Package creation encountered issues"
+            echo "You may need to add icon files to ./teams/ directory:"
+            echo "  - color.png (192x192)"
+            echo "  - outline.png (32x32)"
+          }
+        else
+          echo "ERROR: create-teams-package.sh not found"
+          exit 1
+        fi
+
+        echo ""
+
+        # Step 3: Optional automated upload to Teams App Catalog
+        # Requires user authentication (service principal not supported by Microsoft)
+        AUTO_UPLOAD="${AUTO_UPLOAD_TEAMS_APP:-false}"
+
+        if [ "$AUTO_UPLOAD" = "true" ]; then
+          echo "Step 3: Uploading to Teams App Catalog..."
+          if [ -f "./scripts/upload-teams-app.sh" ]; then
+            # Check if already authenticated
+            if az account show &>/dev/null; then
+              ./scripts/upload-teams-app.sh --package "./$PACKAGE_NAME" --force || {
+                echo "WARNING: Auto-upload failed. You can upload manually."
+              }
+            else
+              echo "WARNING: Not authenticated to Azure CLI."
+              echo "Run 'az login' then: ./scripts/upload-teams-app.sh --package ./$PACKAGE_NAME"
+            fi
+          else
+            echo "WARNING: upload-teams-app.sh not found"
+          fi
+          echo ""
+        fi
+
+        echo "=========================================="
+        echo "Deployment Complete!"
+        echo "=========================================="
+        echo ""
+        echo "Teams App Package: ./$PACKAGE_NAME"
+        echo ""
+        echo "NEXT STEPS:"
+        echo "==========="
+        echo ""
+        echo "Option 1: Automated Upload (Requires User Auth)"
+        echo "  ./scripts/upload-teams-app.sh --package ./$PACKAGE_NAME"
+        echo "  # Or enable auto-upload: azd env set AUTO_UPLOAD_TEAMS_APP true"
+        echo ""
+        echo "Option 2: Manual Upload to Teams Admin Center (Organization-wide)"
+        echo "  1. Go to: https://admin.teams.microsoft.com/policies/manage-apps"
+        echo "  2. Click 'Upload' -> 'Upload an app to your org's app catalog'"
+        echo "  3. Select: ./$PACKAGE_NAME"
+        echo "  4. Configure permissions and publish"
+        echo ""
+        echo "Option 3: Sideload for Testing (Personal)"
+        echo "  1. Open Microsoft Teams"
+        echo "  2. Go to Apps > 'Manage your apps'"
+        echo "  3. Click 'Upload an app' -> 'Upload a custom app'"
+        echo "  4. Select: ./$PACKAGE_NAME"
+        echo ""
+        echo "Option 4: Test Deployment"
+        echo "  ./scripts/test-teams-deployment.sh"
+        echo ""
     windows:
       shell: pwsh
       run: |
-        Write-Host "Generating Teams app manifest..."
-        if (Test-Path "./scripts/generate-teams-manifest.ps1") {
-          ./scripts/generate-teams-manifest.ps1
-        } else {
-          Write-Host "Manifest generation script not found, skipping..."
-          Write-Host "WARNING: Teams manifest must be generated manually"
+        Write-Host "=========================================="
+        Write-Host "Generating Teams App Package"
+        Write-Host "=========================================="
+
+        # Get environment name for package naming
+        $ENVIRONMENT = if ($env:AZURE_ENV_NAME) { $env:AZURE_ENV_NAME } else { "dev" }
+        $APP_VERSION = "1.0.0"
+
+        # Get deployment outputs from azd env
+        $envValues = azd env get-values 2>$null | Out-String
+        $BOT_ID = if ($envValues -match 'BOT_ID="?([^"\r\n]+)"?') { $matches[1] } else { "" }
+        $CONTAINER_APP_FQDN = if ($envValues -match 'CONTAINER_APP_FQDN="?([^"\r\n]+)"?') { $matches[1] } else { "" }
+
+        # Fallback: try BOT_APP_ID if BOT_ID is empty
+        if ([string]::IsNullOrEmpty($BOT_ID)) {
+          $BOT_ID = if ($envValues -match 'BOT_APP_ID="?([^"\r\n]+)"?') { $matches[1] } else { "" }
         }
-        Write-Host "Deployment complete!"
-        Write-Host "Next steps:"
-        Write-Host "1. Upload the Teams app manifest to Teams Admin Center"
-        Write-Host "2. Test the bot in Microsoft Teams"
+
+        # Validate required variables
+        if ([string]::IsNullOrEmpty($BOT_ID) -or [string]::IsNullOrEmpty($CONTAINER_APP_FQDN)) {
+          Write-Host "WARNING: BOT_ID or CONTAINER_APP_FQDN not available from deployment"
+          Write-Host "BOT_ID: $(if ($BOT_ID) { $BOT_ID } else { '<not set>' })"
+          Write-Host "CONTAINER_APP_FQDN: $(if ($CONTAINER_APP_FQDN) { $CONTAINER_APP_FQDN } else { '<not set>' })"
+          Write-Host ""
+          Write-Host "Skipping automated Teams package generation."
+          Write-Host "Please run manually after deployment completes."
+          exit 0
+        }
+
+        # Construct bot endpoint URL
+        $BOT_ENDPOINT = "$CONTAINER_APP_FQDN/api/messages"
+
+        Write-Host "Bot ID: $BOT_ID"
+        Write-Host "Bot Endpoint: https://$BOT_ENDPOINT"
+        Write-Host "Environment: $ENVIRONMENT"
+        Write-Host ""
+
+        # Note: PowerShell scripts may not exist - use bash via WSL if needed
+        Write-Host "NOTE: For Windows, please use WSL or Git Bash to run:"
+        Write-Host "  ./scripts/generate-teams-manifest.sh --bot-id $BOT_ID --endpoint $BOT_ENDPOINT"
+        Write-Host "  ./scripts/create-teams-package.sh --input ./teams --output ./teams-app-$ENVIRONMENT-$APP_VERSION.zip"
+        Write-Host ""
+        Write-Host "=========================================="
+        Write-Host "NEXT STEPS:"
+        Write-Host "=========================================="
+        Write-Host ""
+        Write-Host "Option 1: Automated Upload (Requires User Auth)"
+        Write-Host "  ./scripts/upload-teams-app.sh --package ./teams-app-$ENVIRONMENT-$APP_VERSION.zip"
+        Write-Host "  # Or enable auto-upload: azd env set AUTO_UPLOAD_TEAMS_APP true"
+        Write-Host ""
+        Write-Host "Option 2: Upload to Teams Admin Center:"
+        Write-Host "   https://admin.teams.microsoft.com/policies/manage-apps"
+        Write-Host ""
+        Write-Host "Option 3: Sideload for testing:"
+        Write-Host "   Teams > Apps > Upload a custom app"
+        Write-Host ""
