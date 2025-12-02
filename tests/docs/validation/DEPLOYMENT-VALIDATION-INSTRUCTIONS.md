@@ -155,7 +155,7 @@ az resource list --resource-group $RG_NAME --query "length(@)"
 3. Container Registry
 4. Container App (API)
 5. Azure OpenAI Service
-6. GPT-4o Deployment
+6. gpt-5 Deployment
 7. Bot Service
 8. Key Vault
 9. Log Analytics Workspace

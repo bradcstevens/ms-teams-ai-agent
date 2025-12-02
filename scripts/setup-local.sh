@@ -95,7 +95,7 @@ if [ ! -f ".env" ]; then
 
 # Azure OpenAI Configuration
 AZURE_OPENAI_ENDPOINT=https://your-openai-resource.openai.azure.com/
-AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4
+AZURE_OPENAI_DEPLOYMENT_NAME=GPT-5
 AZURE_OPENAI_API_VERSION=2024-02-15-preview
 
 # Azure Bot Service Configuration

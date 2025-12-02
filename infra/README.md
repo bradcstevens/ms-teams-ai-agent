@@ -84,7 +84,7 @@ infra/
 | `location` | string | Primary Azure region | deployment().location |
 | `principalId` | string | Service principal for RBAC | '' (empty) |
 | `openAiLocation` | string | Azure OpenAI region | 'eastus' |
-| `openAiModelName` | string | OpenAI model name | 'gpt-4' |
+| `openAiModelName` | string | OpenAI model name | 'GPT-5' |
 | `openAiModelVersion` | string | Model version | '0613' |
 | `botDisplayName` | string | Teams bot display name | 'AI Agent for Teams' |
 | `mcpServers` | array | MCP server configurations | [] (empty array) |

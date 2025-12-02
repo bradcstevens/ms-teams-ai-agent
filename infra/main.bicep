@@ -32,7 +32,7 @@ param principalId string = ''
 ])
 param principalType string = 'User'
 
-@description('Azure OpenAI service region (must support GPT-4)')
+@description('Azure OpenAI service region (must support GPT-5)')
 @allowed([
   'eastus'
   'eastus2'
@@ -51,7 +51,7 @@ param principalType string = 'User'
 param openAiLocation string = 'eastus'
 
 @description('Azure OpenAI model name for deployment')
-param openAiModelName string = 'gpt-4o'
+param openAiModelName string = 'gpt-5'
 
 @description('Azure OpenAI model version')
 param openAiModelVersion string = '2024-08-06'
@@ -199,7 +199,7 @@ module containerApp './core/host/container-app.bicep' = {
   ]
 }
 
-// Azure OpenAI Service with GPT-4 deployment
+// Azure OpenAI Service with GPT-5 deployment
 module openAi './ai/openai.bicep' = {
   name: 'openai-${resourceToken}'
   scope: rg
@@ -253,7 +253,7 @@ module keyVault './security/key-vault.bicep' = {
 @description('Azure OpenAI service endpoint URL')
 output AZURE_OPENAI_ENDPOINT string = openAi.outputs.endpoint
 
-@description('Azure OpenAI GPT-4 deployment name')
+@description('Azure OpenAI GPT-5 deployment name')
 output AZURE_OPENAI_DEPLOYMENT_NAME string = openAi.outputs.deploymentName
 
 @description('Azure Bot Service application ID')

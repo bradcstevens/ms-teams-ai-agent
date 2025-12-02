@@ -5,7 +5,7 @@ An AI agent for Microsoft Teams, built with Azure Container Apps, Azure OpenAI, 
 ## Features
 
 - One-command deployment with `azd up` (target: <15 minutes)
-- Azure OpenAI integration with GPT-4o
+- Azure OpenAI integration with GPT-5
 - Microsoft Teams bot integration
 - Model Context Protocol (MCP) server support
 - Application Insights monitoring
@@ -151,7 +151,7 @@ The following environment variables are automatically configured during deployme
 | Variable | Description | Source |
 |----------|-------------|--------|
 | `AZURE_OPENAI_ENDPOINT` | Azure OpenAI service endpoint | Bicep output |
-| `AZURE_OPENAI_DEPLOYMENT_NAME` | GPT-4o model deployment name | Bicep output |
+| `AZURE_OPENAI_DEPLOYMENT_NAME` | gpt-5 model deployment name | Bicep output |
 | `BOT_ID` | Azure Bot Service application ID | Bot registration |
 | `BOT_PASSWORD` | Bot application password | Key Vault |
 | `BOT_TENANT_ID` | Azure AD tenant ID | Bicep output |
@@ -163,7 +163,7 @@ The following environment variables are automatically configured during deployme
 ### Azure Resources
 
 - **Azure Container Apps**: Serverless container hosting
-- **Azure OpenAI Service**: GPT-4o model deployment
+- **Azure OpenAI Service**: gpt-5 model deployment
 - **Azure Bot Service**: Teams integration
 - **Azure Container Registry**: Container image storage
 - **Azure Key Vault**: Secrets management

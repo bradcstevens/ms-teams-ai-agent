@@ -1,12 +1,12 @@
 // Azure OpenAI Service Module
-// Creates Azure OpenAI account with GPT-4 deployment and managed identity authentication
+// Creates Azure OpenAI account with GPT-5 deployment and managed identity authentication
 
 @description('Name of the Azure OpenAI account')
 @minLength(2)
 @maxLength(64)
 param openAiAccountName string
 
-@description('Azure region for OpenAI service (must support GPT-4)')
+@description('Azure region for OpenAI service (must support GPT-5)')
 param location string
 
 @description('Resource tags for organization and cost tracking')
@@ -18,8 +18,8 @@ param tags object = {}
 ])
 param sku string = 'S0'
 
-@description('Model name for deployment (e.g., gpt-4o, gpt-4-turbo)')
-param modelName string = 'gpt-4o'
+@description('Model name for deployment (e.g., gpt-5, GPT-5-turbo)')
+param modelName string = 'gpt-5'
 
 @description('Model version')
 param modelVersion string = '2024-08-06'

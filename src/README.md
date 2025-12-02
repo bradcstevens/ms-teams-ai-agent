@@ -131,7 +131,7 @@ nano .env
 ```bash
 # Azure OpenAI (from infrastructure deployment)
 AZURE_OPENAI_ENDPOINT=https://oai-<env>-<token>.openai.azure.com
-AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4
+AZURE_OPENAI_DEPLOYMENT_NAME=GPT-5
 
 # Bot Service (from infrastructure deployment)
 BOT_ID=<your-bot-app-id>
@@ -223,7 +223,7 @@ docker build -t teams-ai-agent:latest .
 # Run container
 docker run -p 8000:8000 \
   -e AZURE_OPENAI_ENDPOINT="..." \
-  -e AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4" \
+  -e AZURE_OPENAI_DEPLOYMENT_NAME="GPT-5" \
   -e BOT_ID="..." \
   -e APPLICATIONINSIGHTS_CONNECTION_STRING="..." \
   teams-ai-agent:latest

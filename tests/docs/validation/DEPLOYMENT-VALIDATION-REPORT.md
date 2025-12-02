@@ -56,7 +56,7 @@ This document provides a comprehensive checklist and report template for validat
 | Container Registry | 1 | ⬜ | |
 | Container App (API) | 1 | ⬜ | |
 | Azure OpenAI Service | 1 | ⬜ | |
-| GPT-4o Deployment | 1 | ⬜ | |
+| gpt-5 Deployment | 1 | ⬜ | |
 | Bot Service | 1 | ⬜ | |
 | Key Vault | 1 | ⬜ | |
 | Log Analytics Workspace | 1 | ⬜ | |

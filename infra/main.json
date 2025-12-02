@@ -63,12 +63,12 @@
         "uksouth"
       ],
       "metadata": {
-        "description": "Azure OpenAI service region (must support GPT-4)"
+        "description": "Azure OpenAI service region (must support GPT-5)"
       }
     },
     "openAiModelName": {
       "type": "string",
-      "defaultValue": "gpt-4o",
+      "defaultValue": "gpt-5",
       "metadata": {
         "description": "Azure OpenAI model name for deployment"
       }
@@ -1103,7 +1103,7 @@
             "location": {
               "type": "string",
               "metadata": {
-                "description": "Azure region for OpenAI service (must support GPT-4)"
+                "description": "Azure region for OpenAI service (must support GPT-5)"
               }
             },
             "tags": {
@@ -1125,9 +1125,9 @@
             },
             "modelName": {
               "type": "string",
-              "defaultValue": "gpt-4o",
+              "defaultValue": "gpt-5",
               "metadata": {
-                "description": "Model name for deployment (e.g., gpt-4o, gpt-4-turbo)"
+                "description": "Model name for deployment (e.g., gpt-5, GPT-5-turbo)"
               }
             },
             "modelVersion": {
@@ -1688,7 +1688,7 @@
     "AZURE_OPENAI_DEPLOYMENT_NAME": {
       "type": "string",
       "metadata": {
-        "description": "Azure OpenAI GPT-4 deployment name"
+        "description": "Azure OpenAI GPT-5 deployment name"
       },
       "value": "[reference('openAi').outputs.deploymentName.value]"
     },
